@@ -44,7 +44,7 @@ button.pork.active { background: var(--pork); }
 .pc-price { font-size: 1.3rem; font-weight: 700; }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
 .pc-change.up { color: var(--up); } .pc-change.down { color: var(--down); }
-.sparkline { position: relative; height: 32px; margin: 6px 0; cursor: crosshair; }
+.sparkline { position: relative; height: 36px; margin: 6px 0; cursor: crosshair; }
 .sparkline svg { width: 100%; height: 100%; display: block; }
 .spark-tooltip {
   position: absolute; background: #0f172a; color: #fff; font-size: 0.68rem;
@@ -52,6 +52,8 @@ button.pork.active { background: var(--pork); }
   transform: translate(-50%, -100%); opacity: 0; transition: opacity 0.1s; z-index: 10;
 }
 .spark-tooltip.visible { opacity: 1; }
+.spark-vs-avg { position: absolute; right: 0; top: -2px; font-size: 0.6rem; font-weight: 600; pointer-events: none; }
+.spark-vs-avg.up { color: var(--up); } .spark-vs-avg.down { color: var(--down); }
 .pc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.7rem; }
 .pc-metric-label { color: var(--muted); } .pc-metric-value { font-weight: 600; }
 .buy-btn { display: block; margin-top: 10px; padding: 6px 0; background: #0f172a; color: #fff; text-align: center; border-radius: 6px; font-size: 0.75rem; text-decoration: none; }
@@ -194,7 +196,7 @@ function buildProducts() {
     '</div>';
   }).join('');
 
-  // Render sparklines
+  // Render sparklines with average line
   document.querySelectorAll('.sparkline').forEach(el => {
     const product = el.dataset.product;
     const items = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
@@ -202,19 +204,30 @@ function buildProducts() {
     const prices = items.map(d => d.price);
     const min = Math.min(...prices), max = Math.max(...prices);
     const range = max - min || 1;
-    const w = 100, h = 32;
+    const avg = Math.round(prices.reduce((a,b) => a+b, 0) / prices.length);
+    const latest = prices[prices.length - 1];
+    const vsAvg = latest - avg;
+    const vsAvgPct = avg ? Math.round((vsAvg / avg) * 100) : 0;
+    const w = 100, h = 36;
     const points = prices.map((pr, i) => {
       const x = (i / (prices.length - 1)) * w;
-      const y = h - ((pr - min) / range) * (h - 4) - 2;
+      const y = h - ((pr - min) / range) * (h - 6) - 3;
       return x + ',' + y;
     }).join(' ');
+    const avgY = h - ((avg - min) / range) * (h - 6) - 3;
     const color = isPork(product) ? '#2563eb' : '#dc2626';
     const lastX = w;
-    const lastY = h - ((prices[prices.length-1] - min) / range) * (h - 4) - 2;
+    const lastY = h - ((latest - min) / range) * (h - 6) - 3;
+    const vsCls = vsAvg > 0 ? 'up' : vsAvg < 0 ? 'down' : '';
+    const vsSign = vsAvg > 0 ? '+' : '';
+    const vsLabel = vsSign + vsAvgPct + '%';
     el.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+      '<line x1="0" y1="' + avgY + '" x2="' + w + '" y2="' + avgY + '" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2,2"/>' +
       '<polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + points + '"/>' +
       '<circle cx="' + lastX + '" cy="' + lastY + '" r="2.5" fill="' + color + '"/>' +
-      '</svg><div class="spark-tooltip"></div>';
+      '</svg>' +
+      '<div class="spark-vs-avg ' + vsCls + '">' + vsLabel + '</div>' +
+      '<div class="spark-tooltip"></div>';
     el.onmousemove = (e) => {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
