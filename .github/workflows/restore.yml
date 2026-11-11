@@ -4,18 +4,31 @@ on:
   push:
     paths:
       - '.github/workflows/restore.yml'
+permissions:
+  contents: write
 jobs:
   restore:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore original checker
+      - name: Restore and upgrade email
         run: |
           curl -sL https://api.github.com/repos/pyw31337/meat/git/blobs/aa5dddfaea0d7069ee247b6f02443a3f7e6fb6fb -o blob.json
           python3 -c "import json,base64; d=json.load(open('blob.json')); open('megamart_checker.py','w').write(base64.b64decode(d['content']).decode())"
-          echo "Restored, size: $(wc -c < megamart_checker.py)"
+          python3 -c "
+import pathlib
+p = pathlib.Path('megamart_checker.py')
+c = p.read_text(encoding='utf-8')
+old = '''\u25a0 \uc2e4\uc2dc\uac04 \uc778\ud130\ub799\ud2f0\ube0c \ub300\uc2dc\ubcf4\ub4dc \ubc14\ub85c\uac00\uae30 (\uae30\uac04/\uc0c1\ud488 \ub2e4\uc774\ub0b4\ubbf9 \ud544\ud130\ub9c1):\n- \ub85c\uceec \ud30c\uc77c: workspace\uc758 \'dashboard.html\' \ud30c\uc77c\uc744 \ube0c\ub77c\uc6b0\uc800\ub85c \uc9c1\uc811 \uc5f4\uc5b4\uc8fc\uc138\uc694.\n- \uae43\ud5c8\ube0c \uc6f9: https://github.com/pyw31337/beautiful-babbage/blob/main/dashboard.html'''
+new = '''\u25a0 \uc2e4\uc2dc\uac04 \uac00\uaca9 \ub300\uc2dc\ubcf4\ub4dc (\uadf8\ub798\ud504 \u00b7 \uae30\uac04/\uc0c1\ud488 \ud544\ud130):\nhttps://pyw31337.github.io/meat/\n\n\u25a0 \uc1fc\ud551\ubab0 \ubc14\ub85c\uac00\uae30:\n- \uc18c\uace0\uae30 \uac80\uc0c9: {BEEF_SEARCH_URL}\n- \ub3fc\uc9c0\uace0\uae30 \uac80\uc0c9: {PORK_SEARCH_URL}'''
+if old in c:
+    c = c.replace(old, new)
+c = c.replace('\uc2e4\uc81c \uad6c\ub9e4 \uc54c\ub9bc \uba54\uc77c\uc740 \ubc1c\uc1a1\ub418\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.', '\uc2e4\uc81c \uad6c\ub9e4 \uc54c\ub9bc \uba54\uc77c\uc740 \ubc1c\uc1a1\ub418\uc9c0 \uc54a\uc558\uc2b5\ub2c8\ub2e4.\n\n\u25a0 \uc2e4\uc2dc\uac04 \uac00\uaca9 \ub300\uc2dc\ubcf4\ub4dc:\nhttps://pyw31337.github.io/meat/')
+p.write_text(c, encoding='utf-8')
+print('Upgraded, length:', len(c))
+"
           git config user.name "pyw31337"
           git config user.email "pyw213@naver.com"
           git add megamart_checker.py
-          git commit -m "fix: restore original megamart_checker.py" || true
+          git commit -m "fix: restore checker and upgrade email with dashboard link" || true
           git push
