@@ -104,7 +104,7 @@ button.pork.active { background: var(--pork); border-color: var(--pork); }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .dot.beef { background: var(--beef); }
 .dot.pork { background: var(--pork); }
-.chart-wrap { position: relative; height: 400px; }
+.chart-wrap { position: relative; height: 560px; }
 
 .product-filters {
   display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
@@ -250,7 +250,7 @@ let chart = null;
 let selectedDays = 0;
 let selectedType = 'all';
 let selectedUnit = 'day';
-let selectedProduct = null; // null = all
+let selectedProduct = null;
 
 const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171','#fca5a5'];
 const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'];
@@ -396,7 +396,6 @@ function buildFilters() {
   const container = document.getElementById('filters');
   container.innerHTML = '';
   
-  // All button
   const allChip = document.createElement('label');
   allChip.className = 'chip active';
   allChip.style.fontWeight = '600';
