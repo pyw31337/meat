@@ -1,677 +1,231 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>모여라 달력 - 사모임 일정 조율 & 가능 날짜 달력</title>
-  <meta name="description" content="사모임 참여자들의 가능 날짜를 달력에 표기하고 전원 모임 가능한 날짜를 자동으로 찾아주는 깃허브 단독 구동 웹 프로그램입니다.">
-  
-  <!-- Google Fonts & Tailwind CDN -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-
-  <style>
-    :root {
-      --font-sans: 'Plus Jakarta Sans', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-      --bg-primary: #0b0f19;
-      --bg-secondary: #111827;
-      --bg-card: rgba(17, 24, 39, 0.78);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --text-main: #F9FAFB;
-      --text-muted: #9CA3AF;
-      --accent-gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-full: 9999px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: var(--font-sans);
-      background-color: var(--bg-primary);
-      background-image: 
-        radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
-        radial-gradient(at 90% 80%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
-      background-attachment: fixed;
-      color: var(--text-main);
-      min-height: 100vh;
-      line-height: 1.5;
-      padding: 24px 16px 60px;
-    }
-
-    .app-container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-
-    /* Header */
-    .header-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.5);
-    }
-    @media (min-width: 768px) {
-      .header-card { flex-direction: row; align-items: center; justify-content: space-between; }
-    }
-
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .logo-icon {
-      width: 44px; height: 44px; border-radius: var(--radius-md);
-      background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-    }
-
-    .calendar-title { font-size: 1.35rem; font-weight: 800; color: #fff; }
-    .calendar-desc { font-size: 0.875rem; color: var(--text-muted); }
-
-    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 10px 16px; border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 700;
-      cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; font-family: inherit;
-    }
-    .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45); }
-    .btn-secondary { background: rgba(255, 255, 255, 0.07); border-color: var(--border-subtle); color: #fff; }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.14); }
-    .btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #F87171; }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
-
-    .form-select, .form-input, .form-textarea {
-      padding: 10px 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md); color: #fff; font-size: 0.9rem; font-family: inherit; outline: none;
-    }
-    .form-select:focus, .form-input:focus, .form-textarea:focus { border-color: #6366F1; }
-    .form-select option { background: #1F2937; color: #fff; }
-
-    /* Participants Chip Bar */
-    .participants-bar {
-      background: var(--bg-card); backdrop-filter: blur(12px); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    }
-    .participant-chip {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px;
-      border-radius: var(--radius-full); background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle); font-size: 0.85rem; font-weight: 600;
-    }
-    .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-    /* Calendar Grid */
-    .calendar-card {
-      background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg); padding: 24px; margin-bottom: 28px; box-shadow: 0 16px 32px -8px rgba(0,0,0,0.5);
-    }
-    .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .month-display { font-size: 1.4rem; font-weight: 800; }
-
-    .weekday-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 10px; text-align: center; }
-    .weekday-label { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); padding: 6px 0; }
-    .weekday-label.sun { color: #F87171; }
-    .weekday-label.sat { color: #60A5FA; }
-
-    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-    .day-cell {
-      min-height: 104px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md); padding: 8px; cursor: pointer; transition: all 0.2s ease;
-      display: flex; flex-direction: column; justify-content: space-between; position: relative;
-    }
-    @media (max-width: 640px) { .day-cell { min-height: 76px; padding: 5px; } }
-    .day-cell:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(99, 102, 241, 0.5); transform: translateY(-2px); }
-    .day-cell.other-month { opacity: 0.3; }
-    .day-cell.today { border-color: #6366F1; background: rgba(99, 102, 241, 0.12); }
-    
-    .day-cell.all-available {
-      background: rgba(16, 185, 129, 0.12); border: 2px solid #10B981;
-      box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
-    }
-    .day-number { font-size: 0.95rem; font-weight: 700; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
-    .sun .day-number { color: #F87171; }
-    .sat .day-number { color: #60A5FA; }
-
-    .badges-container { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-    .participant-badge {
-      display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-full);
-      font-size: 0.72rem; font-weight: 700; line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-    .badge-dot { width: 5px; height: 5px; border-radius: 50%; }
-
-    /* Summary Card */
-    .summary-card {
-      background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg); padding: 24px;
-    }
-    .summary-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .summary-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-    @media (min-width: 768px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
-
-    .summary-box {
-      background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px;
-    }
-    .summary-box.full-match { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04); }
-    .date-item-btn {
-      width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-      color: #fff; cursor: pointer; transition: all 0.2s ease; margin-bottom: 8px; text-align: left;
-    }
-    .date-item-btn:hover { background: rgba(99, 102, 241, 0.15); border-color: #6366F1; transform: translateX(4px); }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(3, 7, 18, 0.82);
-      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
-    }
-    .modal-container {
-      background: #111827; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--radius-lg);
-      width: 100%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); overflow: hidden;
-    }
-    .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; }
-    .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-    .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메가마트 한우 등심 & 삼겹살 가격 추이</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --card: #1a1f2e;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --border: #30363d;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Noto Sans KR', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; margin-bottom: 28px; }
+        h1 { font-size: 1.8rem; margin: 0 0 8px; font-weight: 700; }
+        .subtitle { color: var(--muted); font-size: 0.95rem; }
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        }
+        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        button {
+            background: #21262d; color: var(--text); border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: inherit;
+            font-size: 0.9rem;
+        }
+        button.active, button:hover { border-color: var(--accent); color: var(--accent); }
+        button.active { background: rgba(88,166,255,0.15); }
+        .chart-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+        }
+        .chart-card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+        .chart-wrap { position: relative; height: 420px; }
+        .product-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #21262d; border: 1px solid var(--border);
+            padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; cursor: pointer;
+        }
+        .chip input { display: none; }
+        .chip.active { border-color: var(--accent); background: rgba(88,166,255,0.12); }
+        .status { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+        .legend-note { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div class="container">
+        <header>
+            <h1>🥩 메가마트 한우 등심 & 삼겹살 가격 추이</h1>
+            <div class="subtitle">동적 차트 · 실시간 가격 데이터 · 한글 정상 표시</div>
+        </header>
 
-  <!-- React & React-DOM UMD CDNs for 100% Zero-Build Standalone GitHub Pages Execution -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+        <div class="controls">
+            <span style="color:var(--muted);">기간:</span>
+            <div class="btn-group">
+                <button data-days="7">7일</button>
+                <button data-days="30">30일</button>
+                <button data-days="90">90일</button>
+                <button data-days="0" class="active">전체</button>
+            </div>
+            <span style="color:var(--muted); margin-left:12px;">종류:</span>
+            <div class="btn-group">
+                <button data-type="all" class="active">전체</button>
+                <button data-type="beef">소고기</button>
+                <button data-type="pork">돼지고기</button>
+            </div>
+        </div>
 
-  <script type="text/babel">
-    const PRESET_COLORS = [
-      '#EF4444', '#F97316', '#F59E0B', '#10B981', '#06B6D4',
-      '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6'
-    ];
+        <div class="chart-card">
+            <h2>가격 추이 (100g당 원)</h2>
+            <div class="chart-wrap"><canvas id="chart"></canvas></div>
+            <div class="product-filters" id="filters"></div>
+            <div class="status" id="status">데이터 로딩 중...</div>
+            <div class="legend-note">호버하면 상세 가격이 나옵니다. 상품 칩을 끄면 해당 곡선이 숨겨집니다.</div>
+        </div>
+    </div>
 
-    function getContrastTextColor(hexColor) {
-      if (!hexColor) return '#FFFFFF';
-      const hex = hexColor.replace('#', '');
-      const r = parseInt(hex.substring(0, 2), 16) || 0;
-      const g = parseInt(hex.substring(2, 4), 16) || 0;
-      const b = parseInt(hex.substring(4, 6), 16) || 0;
-      return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? '#111827' : '#FFFFFF';
-    }
+    <script>
+        const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
+        let rawData = [];
+        let chart = null;
+        let selectedDays = 0;
+        let selectedType = 'all';
+        let visibleProducts = new Set();
 
-    const INITIAL_CALENDARS = [
-      {
-        id: 'cal_vacation',
-        title: '🏝️ 8월 여름휴가 친목 모임',
-        description: '친구들과 함께 떠나는 여름 휴가 및 계곡 사모임 일정 조율',
-        participants: [
-          { id: 'p1', name: '김민준', color: '#EF4444' },
-          { id: 'p2', name: '이서연', color: '#3B82F6' },
-          { id: 'p3', name: '박도현', color: '#10B981' },
-          { id: 'p4', name: '최지아', color: '#EC4899' },
-          { id: 'p5', name: '정현우', color: '#8B5CF6' }
-        ],
-        availabilities: [
-          { date: '2026-08-08', participantId: 'p1', note: '주말 전일 가능' },
-          { date: '2026-08-08', participantId: 'p2', note: '차량 운전 가능' },
-          { date: '2026-08-08', participantId: 'p3', note: '오후 1시 이후' },
-          { date: '2026-08-08', participantId: 'p4', note: '참석 가능' },
-          { date: '2026-08-08', participantId: 'p5', note: '참석 가능' },
-          { date: '2026-08-15', participantId: 'p1', note: '공휴일 가능' },
-          { date: '2026-08-15', participantId: 'p2', note: '펜션 예약 담당' },
-          { date: '2026-08-15', participantId: 'p3', note: '좋습니다' },
-          { date: '2026-08-15', participantId: 'p4', note: '참석' },
-          { date: '2026-08-15', participantId: 'p5', note: '무조건 참석' }
-        ]
-      }
-    ];
-
-    function App() {
-      const [calendars, setCalendars] = React.useState(() => {
-        const raw = localStorage.getItem('gather_calendars_data');
-        return raw ? JSON.parse(raw) : INITIAL_CALENDARS;
-      });
-
-      const [activeCalId, setActiveCalId] = React.useState(() => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('cal') || calendars[0]?.id || '';
-      });
-
-      const [currentMonthDate, setCurrentMonthDate] = React.useState(new Date());
-      const [selectedDate, setSelectedDate] = React.useState(null);
-      const [isModalOpen, setIsModalOpen] = React.useState(false);
-      const [isAdminOpen, setIsAdminOpen] = React.useState(false);
-      const [isShareOpen, setIsShareOpen] = React.useState(false);
-
-      React.useEffect(() => {
-        localStorage.setItem('gather_calendars_data', JSON.stringify(calendars));
-      }, [calendars]);
-
-      const activeCal = calendars.find(c => c.id === activeCalId) || calendars[0];
-
-      // Availability Handler
-      const handleSaveAvailability = (dateStr, participantId, note) => {
-        const existing = activeCal.availabilities || [];
-        const index = existing.findIndex(e => e.date === dateStr && e.participantId === participantId);
-        let nextAvail = [...existing];
-        if (index >= 0) {
-          nextAvail[index] = { date: dateStr, participantId, note };
-        } else {
-          nextAvail.push({ date: dateStr, participantId, note });
+        async function loadData() {
+            const status = document.getElementById('status');
+            try {
+                const res = await fetch(CSV_URL + '?t=' + Date.now());
+                if (!res.ok) throw new Error('CSV 로드 실패');
+                const text = await res.text();
+                const lines = text.trim().split(/\r?\n/);
+                rawData = lines.slice(1).map(line => {
+                    const parts = line.split(',');
+                    return {
+                        date: parts[0],
+                        product: parts[1],
+                        price: parseInt(parts[2], 10)
+                    };
+                }).filter(d => d.date && !isNaN(d.price));
+                status.textContent = `로드 완료: ${rawData.length}건 · 기간 ${rawData[0]?.date || '-'} ~ ${rawData[rawData.length-1]?.date || '-'}`;
+                buildFilters();
+                renderChart();
+            } catch (e) {
+                status.textContent = '데이터 로드 실패: ' + e.message;
+                console.error(e);
+            }
         }
 
-        const updatedCal = { ...activeCal, availabilities: nextAvail };
-        setCalendars(calendars.map(c => c.id === updatedCal.id ? updatedCal : c));
-
-        // Confetti check
-        const dateCount = nextAvail.filter(e => e.date === dateStr).length;
-        if (dateCount === activeCal.participants.length && typeof confetti === 'function') {
-          confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+        function buildFilters() {
+            const products = [...new Set(rawData.map(d => d.product))].sort();
+            const container = document.getElementById('filters');
+            container.innerHTML = '';
+            visibleProducts = new Set(products);
+            products.forEach(p => {
+                const chip = document.createElement('label');
+                chip.className = 'chip active';
+                const short = p.replace(' (국내산) 100g','').replace('구이용','');
+                chip.innerHTML = `<input type="checkbox" checked data-product="${p}"><span>${short}</span>`;
+                chip.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) visibleProducts.add(p);
+                    else visibleProducts.delete(p);
+                    chip.classList.toggle('active', e.target.checked);
+                    renderChart();
+                });
+                container.appendChild(chip);
+            });
         }
-      };
 
-      const handleDeleteAvailability = (dateStr, participantId) => {
-        const nextAvail = (activeCal.availabilities || []).filter(
-          e => !(e.date === dateStr && e.participantId === participantId)
-        );
-        const updatedCal = { ...activeCal, availabilities: nextAvail };
-        setCalendars(calendars.map(c => c.id === updatedCal.id ? updatedCal : c));
-      };
+        function getFiltered() {
+            let data = rawData.filter(d => visibleProducts.has(d.product));
+            if (selectedType === 'beef') data = data.filter(d => !d.product.includes('삼겹살'));
+            if (selectedType === 'pork') data = data.filter(d => d.product.includes('삼겹살'));
+            if (selectedDays > 0) {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - selectedDays);
+                const cutStr = cutoff.toISOString().slice(0,10);
+                data = data.filter(d => d.date >= cutStr);
+            }
+            return data;
+        }
 
-      // Admin Handlers
-      const handleSaveAdmin = (updatedCal) => {
-        setCalendars(calendars.map(c => c.id === updatedCal.id ? updatedCal : c));
-      };
+        function renderChart() {
+            const data = getFiltered();
+            const products = [...new Set(data.map(d => d.product))];
+            const dates = [...new Set(data.map(d => d.date))].sort();
 
-      const handleCreateNewCal = () => {
-        const title = prompt('새 모임 달력의 이름을 입력해 주세요:', '9월 정기 사모임 달력');
-        if (!title) return;
-        const newCal = {
-          id: 'cal_' + Date.now(),
-          title,
-          description: '자유롭게 모임 가능 일자를 선택해주세요',
-          participants: [
-            { id: 'p1', name: '참여자 1', color: '#EF4444' },
-            { id: 'p2', name: '참여자 2', color: '#3B82F6' }
-          ],
-          availabilities: []
-        };
-        setCalendars([newCal, ...calendars]);
-        setActiveCalId(newCal.id);
-      };
+            const colors = [
+                '#58a6ff','#f85149','#3fb950','#d29922','#bc8cff',
+                '#79c0ff','#ffa657','#56d364','#e3b341','#b392f0'
+            ];
 
-      return (
-        <div className="app-container">
-          {/* Header */}
-          <header className="header-card">
-            <div className="header-left">
-              <div className="logo-icon">📅</div>
-              <div>
-                <div className="calendar-title">{activeCal?.title}</div>
-                {activeCal?.description && <div className="calendar-desc">{activeCal.description}</div>}
-              </div>
-            </div>
+            const datasets = products.map((p, i) => {
+                const map = new Map(data.filter(d => d.product === p).map(d => [d.date, d.price]));
+                return {
+                    label: p.replace(' (국내산) 100g','').replace('구이용',''),
+                    data: dates.map(d => map.has(d) ? map.get(d) : null),
+                    borderColor: colors[i % colors.length],
+                    backgroundColor: colors[i % colors.length] + '22',
+                    tension: 0.25,
+                    spanGaps: true,
+                    pointRadius: 3,
+                    borderWidth: 2
+                };
+            });
 
-            <div className="header-actions">
-              <select
-                className="form-select"
-                style={{ fontWeight: '700' }}
-                value={activeCal?.id}
-                onChange={(e) => setActiveCalId(e.target.value)}
-              >
-                {calendars.map(c => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
-              </select>
-              <button className="btn btn-secondary" onClick={handleCreateNewCal}>+ 달력 생성</button>
-              <button className="btn btn-secondary" onClick={() => setIsShareOpen(true)}>🔗 공유</button>
-              <button className="btn btn-primary" onClick={() => setIsAdminOpen(true)}>⚙️ 어드민</button>
-            </div>
-          </header>
+            if (chart) chart.destroy();
+            const ctx = document.getElementById('chart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: dates, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, color: '#e6edf3' } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8b949e', maxRotation: 45 }, grid: { color: '#30363d' } },
+                        y: {
+                            ticks: { color: '#8b949e', callback: v => v.toLocaleString() },
+                            grid: { color: '#30363d' },
+                            title: { display: true, text: '원 / 100g', color: '#8b949e' }
+                        }
+                    }
+                }
+            });
+        }
 
-          {/* Participants Chip Bar */}
-          <div className="participants-bar">
-            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>
-              👥 참여자 ({activeCal?.participants?.length || 0}명):
-            </span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {activeCal?.participants?.map(p => (
-                <div key={p.id} className="participant-chip">
-                  <span className="color-dot" style={{ backgroundColor: p.color }} />
-                  <span>{p.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        document.querySelectorAll('[data-days]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedDays = parseInt(btn.dataset.days, 10);
+                renderChart();
+            });
+        });
+        document.querySelectorAll('[data-type]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedType = btn.dataset.type;
+                renderChart();
+            });
+        });
 
-          {/* Main Monthly Calendar Grid */}
-          <CalendarGrid
-            calendar={activeCal}
-            monthDate={currentMonthDate}
-            onPrevMonth={() => setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() - 1, 1))}
-            onNextMonth={() => setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 1))}
-            onToday={() => setCurrentMonthDate(new Date())}
-            onSelectDate={(d) => { setSelectedDate(d); setIsModalOpen(true); }}
-          />
-
-          {/* Bottom Summary List of All Available Dates */}
-          <SummaryList
-            calendar={activeCal}
-            onSelectDate={(d) => { setSelectedDate(d); setIsModalOpen(true); }}
-          />
-
-          {/* Modal Popups */}
-          {isModalOpen && (
-            <DateModal
-              dateStr={selectedDate}
-              calendar={activeCal}
-              onSave={handleSaveAvailability}
-              onDelete={handleDeleteAvailability}
-              onClose={() => setIsModalOpen(false)}
-            />
-          )}
-
-          {isAdminOpen && (
-            <AdminModal
-              calendar={activeCal}
-              onSave={handleSaveAdmin}
-              onClose={() => setIsAdminOpen(false)}
-            />
-          )}
-
-          {isShareOpen && (
-            <ShareModal
-              calendar={activeCal}
-              onClose={() => setIsShareOpen(false)}
-            />
-          )}
-        </div>
-      );
-    }
-
-    // Calendar Grid Component
-    function CalendarGrid({ calendar, monthDate, onPrevMonth, onNextMonth, onToday, onSelectDate }) {
-      const year = monthDate.getFullYear();
-      const month = monthDate.getMonth();
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-
-      const days = [];
-      for (let i = 0; i < firstDay; i++) days.push(null);
-      for (let i = 1; i <= lastDate; i++) days.push(i);
-
-      const availMap = (calendar?.availabilities || []).reduce((acc, entry) => {
-        if (!acc[entry.date]) acc[entry.date] = [];
-        acc[entry.date].push(entry);
-        return acc;
-      }, {});
-
-      const participantsMap = (calendar?.participants || []).reduce((acc, p) => {
-        acc[p.id] = p;
-        return acc;
-      }, {});
-
-      const totalPartCount = calendar?.participants?.length || 0;
-
-      return (
-        <div className="calendar-card">
-          <div className="calendar-nav">
-            <div className="month-display">📅 {year}년 {month + 1}월</div>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button className="btn btn-secondary" onClick={onToday}>오늘</button>
-              <button className="btn btn-secondary" onClick={onPrevMonth}>◀ 이전달</button>
-              <button className="btn btn-secondary" onClick={onNextMonth}>다음달 ▶</button>
-            </div>
-          </div>
-
-          <div className="weekday-grid">
-            <div className="weekday-label sun">일</div>
-            <div className="weekday-label">월</div>
-            <div className="weekday-label">화</div>
-            <div className="weekday-label">수</div>
-            <div className="weekday-label">목</div>
-            <div className="weekday-label">금</div>
-            <div className="weekday-label sat">토</div>
-          </div>
-
-          <div className="days-grid">
-            {days.map((dayNum, idx) => {
-              if (!dayNum) return <div key={idx} className="day-cell other-month" />;
-
-              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-              const entries = availMap[dateStr] || [];
-              const isAllAvailable = totalPartCount > 0 && entries.length === totalPartCount;
-
-              return (
-                <div
-                  key={idx}
-                  className={`day-cell ${isAllAvailable ? 'all-available' : ''}`}
-                  onClick={() => onSelectDate(dateStr)}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span className="day-number">{dayNum}</span>
-                    {isAllAvailable && <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 800 }}>🌟 전원</span>}
-                  </div>
-
-                  <div className="badges-container">
-                    {entries.map(e => {
-                      const p = participantsMap[e.participantId];
-                      if (!p) return null;
-                      return (
-                        <span
-                          key={p.id}
-                          className="participant-badge"
-                          style={{ backgroundColor: p.color, color: getContrastTextColor(p.color) }}
-                          title={e.note ? `${p.name}: ${e.note}` : p.name}
-                        >
-                          <span className="badge-dot" style={{ backgroundColor: getContrastTextColor(p.color) }} />
-                          {p.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    // Date Layer Popup Modal
-    function DateModal({ dateStr, calendar, onSave, onDelete, onClose }) {
-      const [participantId, setParticipantId] = React.useState(calendar?.participants[0]?.id || '');
-      const [note, setNote] = React.useState('');
-
-      const dateEntries = (calendar?.availabilities || []).filter(e => e.date === dateStr);
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!participantId) return;
-        onSave(dateStr, participantId, note);
-        onClose();
-      };
-
-      return (
-        <div className="modal-overlay" onClick={onClose}>
-          <div className="modal-container" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>📅 {dateStr} 모임 일정 등록</h3>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>참여자 선택</label>
-                  <select
-                    className="form-select"
-                    style={{ width: '100%' }}
-                    value={participantId}
-                    onChange={e => setParticipantId(e.target.value)}
-                  >
-                    {calendar.participants.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>메모 입력 (선택)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    style={{ width: '100%' }}
-                    placeholder="예: 1시 이후 가능, 차 준비됨"
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                  />
-                </div>
-
-                {dateEntries.length > 0 && (
-                  <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>현재 등록된 참여자:</div>
-                    {dateEntries.map(e => {
-                      const p = calendar.participants.find(part => part.id === e.participantId);
-                      if (!p) return null;
-                      return (
-                        <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <span className="participant-badge" style={{ backgroundColor: p.color, color: getContrastTextColor(p.color) }}>
-                            {p.name} {e.note && `("${e.note}")`}
-                          </span>
-                          <button type="button" className="btn btn-danger" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => onDelete(dateStr, p.id)}>삭제</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={onClose}>취소</button>
-                <button type="submit" className="btn btn-primary">저장하기</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    // Admin Modal
-    function AdminModal({ calendar, onSave, onClose }) {
-      const [title, setTitle] = React.useState(calendar.title);
-      const [participants, setParticipants] = React.useState(calendar.participants);
-      const [newName, setNewName] = React.useState('');
-
-      const handleAddParticipant = () => {
-        if (!newName.trim()) return;
-        setParticipants([...participants, { id: 'p_' + Date.now(), name: newName.trim(), color: PRESET_COLORS[participants.length % PRESET_COLORS.length] }]);
-        setNewName('');
-      };
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave({ ...calendar, title, participants });
-        onClose();
-      };
-
-      return (
-        <div className="modal-overlay" onClick={onClose}>
-          <div className="modal-container" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>⚙️ 어드민: 달력 & 참여자 설정</h3>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>달력명 (상단 표기)</label>
-                  <input type="text" className="form-input" style={{ width: '100%' }} value={title} onChange={e => setTitle(e.target.value)} required />
-                </div>
-
-                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>참여자 설정 ({participants.length}명)</label>
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
-                    <input type="text" className="form-input" style={{ flex: 1 }} placeholder="새 참여자 이름" value={newName} onChange={e => setNewName(e.target.value)} />
-                    <button type="button" className="btn btn-secondary" onClick={handleAddParticipant}>추가</button>
-                  </div>
-
-                  {participants.map(p => (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <input type="color" value={p.color} onChange={e => setParticipants(participants.map(item => item.id === p.id ? { ...item, color: e.target.value } : item))} style={{ width: '28px', height: '28px', border: 'none', background: 'none', cursor: 'pointer' }} />
-                      <input type="text" className="form-input" style={{ flex: 1, padding: '4px 8px' }} value={p.name} onChange={e => setParticipants(participants.map(item => item.id === p.id ? { ...item, name: e.target.value } : item))} />
-                      <button type="button" className="btn btn-danger" style={{ padding: '4px 8px' }} onClick={() => setParticipants(participants.filter(item => item.id !== p.id))}>✕</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={onClose}>취소</button>
-                <button type="submit" className="btn btn-primary">설정 저장</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    // Share Modal
-    function ShareModal({ calendar, onClose }) {
-      const shareUrl = window.location.href;
-      return (
-        <div className="modal-overlay" onClick={onClose}>
-          <div className="modal-container" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>🔗 달력 공유 URL</h3>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-            <div className="modal-body">
-              <input type="text" className="form-input" style={{ width: '100%' }} value={shareUrl} readOnly />
-              <button className="btn btn-primary" onClick={() => { navigator.clipboard.writeText(shareUrl); alert('URL이 복사되었습니다!'); }}>URL 복사하기</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Summary List
-    function SummaryList({ calendar, onSelectDate }) {
-      const totalCount = calendar?.participants?.length || 0;
-      const dateMap = (calendar?.availabilities || []).reduce((acc, e) => {
-        if (!acc[e.date]) acc[e.date] = [];
-        acc[e.date].push(e);
-        return acc;
-      }, {});
-
-      const fullDates = Object.keys(dateMap).filter(d => dateMap[d].length === totalCount);
-
-      return (
-        <div className="summary-card">
-          <div className="summary-title">🎉 전원 참석 가능 날짜 리스트 ({fullDates.length}일)</div>
-          {fullDates.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>아직 참여자 전원이 가능한 날짜가 없습니다. 달력에서 날짜를 선택하여 가능 여부를 표기해보세요!</div>
-          ) : (
-            <div>
-              {fullDates.map(d => (
-                <button key={d} className="date-item-btn" onClick={() => onSelectDate(d)}>
-                  <span style={{ fontWeight: 800, color: '#10B981' }}>{d}</span>
-                  <span style={{ fontSize: '0.75rem', background: '#10B981', color: '#000', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>전원 가능 ({totalCount}/{totalCount}명)</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+        loadData();
+    </script>
 </body>
 </html>
