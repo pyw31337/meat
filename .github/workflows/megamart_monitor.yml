@@ -42,6 +42,7 @@ jobs:
     - name: Run Megamart Price Checker
       env:
         RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       run: python megamart_checker.py
 
     - name: Commit and Push History
