@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>메가마트 한우·삼겹살 가격</title>
+<title>메가마트 가격</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -17,6 +17,12 @@
   --pork: #2563eb;
   --up: #ef4444;
   --down: #22c55e;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --radius: 12px;
 }
 * { box-sizing: border-box; }
 body {
@@ -24,104 +30,154 @@ body {
   font-family: 'Noto Sans KR', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
+  line-height: 1.4;
 }
-.container { max-width: 1400px; margin: 0 auto; padding: 24px 20px 48px; }
-header { margin-bottom: 24px; }
-h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.02em; }
+.container { max-width: 1280px; margin: 0 auto; padding: var(--space-5) var(--space-4) 48px; }
+
+header { margin-bottom: var(--space-5); }
+h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 var(--space-1); letter-spacing: -0.02em; }
 .subtitle { color: var(--muted); font-size: 0.85rem; }
+
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .summary-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  transition: box-shadow 0.15s;
 }
+.summary-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 .summary-card.beef { border-top: 3px solid var(--beef); }
 .summary-card.pork { border-top: 3px solid var(--pork); }
-.card-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.icon { font-size: 1rem; }
-.card-name { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-price { font-size: 1.25rem; font-weight: 700; }
-.card-change { font-size: 0.75rem; font-weight: 500; }
+.card-name {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: var(--space-1);
+}
+.card-price {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.card-change {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: var(--space-1);
+}
 .card-change.up { color: var(--up); }
 .card-change.down { color: var(--down); }
-.controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-.btn-group { display: flex; gap: 3px; }
-button {
+.card-change.flat { color: var(--muted); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.btn-group {
+  display: flex;
   background: var(--card);
-  color: var(--text);
   border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+button {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  padding: 6px 14px;
   cursor: pointer;
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 500;
+  transition: all 0.15s;
 }
-button.active { background: var(--text); color: #fff; border-color: var(--text); }
-button.beef.active { background: var(--beef); border-color: var(--beef); }
-button.pork.active { background: var(--pork); border-color: var(--pork); }
+button:hover { color: var(--text); background: #f8fafc; }
+button.active { background: var(--text); color: #fff; }
+button.beef.active { background: var(--beef); }
+button.pork.active { background: var(--pork); }
+
 .chart-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
 }
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
 .chart-header h2 { margin: 0; font-size: 0.95rem; font-weight: 600; }
-.legend-inline { display: flex; gap: 14px; font-size: 0.75rem; color: var(--muted); }
-.legend-inline span { display: flex; align-items: center; gap: 4px; }
-.dot { width: 7px; height: 7px; border-radius: 50%; }
+.legend { display: flex; gap: var(--space-3); font-size: 0.75rem; color: var(--muted); }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot.beef { background: var(--beef); }
 .dot.pork { background: var(--pork); }
-.chart-wrap { position: relative; height: 420px; }
+.chart-wrap { position: relative; height: 400px; }
+
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 12px;
-  padding-top: 12px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--border);
 }
 .chip {
   background: #f1f5f9;
   border: none;
-  padding: 4px 10px;
-  border-radius: 16px;
+  padding: 5px 12px;
+  border-radius: 20px;
   font-size: 0.75rem;
   cursor: pointer;
   font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
 }
+.chip:hover { background: #e2e8f0; }
 .chip.active { background: var(--text); color: #fff; }
 .chip.beef.active { background: var(--beef); }
 .chip.pork.active { background: var(--pork); }
+
 .analysis {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
 }
 .analysis-item {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
 }
 .analysis-item.beef { border-left: 3px solid var(--beef); }
 .analysis-item.pork { border-left: 3px solid var(--pork); }
-.analysis-item h3 { margin: 0 0 8px; font-size: 0.8rem; font-weight: 600; }
-.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
-.metric-label { font-size: 0.68rem; color: var(--muted); }
+.analysis-item h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); }
+.metric-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
 .metric-value { font-size: 0.85rem; font-weight: 600; }
 .metric-value.up { color: var(--up); }
 .metric-value.down { color: var(--down); }
-.status { font-size: 0.72rem; color: var(--muted); margin-top: 10px; }
-footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 20px; }
+
+.status { font-size: 0.72rem; color: var(--muted); margin-top: var(--space-3); }
+footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: var(--space-5); }
 footer a { color: var(--pork); text-decoration: none; }
 </style>
 </head>
@@ -129,9 +185,11 @@ footer a { color: var(--pork); text-decoration: none; }
 <div class="container">
   <header>
     <h1>메가마트 가격</h1>
-    <div class="subtitle">한우 등심 · 삼겹살 · 100g</div>
+    <div class="subtitle">한우 등심 · 삼겹살 · 100g당</div>
   </header>
+
   <div class="summary" id="summary"></div>
+
   <div class="controls">
     <div class="btn-group">
       <button data-days="7">7일</button>
@@ -150,24 +208,29 @@ footer a { color: var(--pork); text-decoration: none; }
       <button data-type="pork" class="pork">돼지</button>
     </div>
   </div>
+
   <div class="chart-card">
     <div class="chart-header">
       <h2>가격 추이</h2>
-      <div class="legend-inline">
-        <span><span class="dot beef"></span>소</span>
-        <span><span class="dot pork"></span>돼지</span>
+      <div class="legend">
+        <span><span class="dot beef"></span>소고기</span>
+        <span><span class="dot pork"></span>돼지고기</span>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
     <div class="filters" id="filters"></div>
     <div class="status" id="status"></div>
   </div>
+
   <div class="analysis" id="analysis"></div>
+
   <footer><a href="https://github.com/pyw31337/meat">GitHub</a></footer>
 </div>
+
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
+
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d)) return iso;
@@ -176,18 +239,22 @@ function formatDate(iso) {
   const dd = String(d.getDate()).padStart(2,'0');
   return yy + '.' + mm + '.' + dd;
 }
+
 function isPork(name) { return name.includes('삼겹살'); }
 function shortName(name) {
   return name.replace(' (국내산) 100g','').replace('구이용','').replace('한우 등심 ','').replace('돼지 ','').trim();
 }
+
 let rawData = [], chart = null, selectedDays = 0, selectedType = 'all', selectedUnit = 'day', selectedProduct = null;
 const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171'];
 const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa'];
+
 function getColor(product, all) {
   const pork = isPork(product);
   const same = all.filter(p => isPork(p) === pork);
   return (pork ? PORK_COLORS : BEEF_COLORS)[same.indexOf(product) % 6];
 }
+
 async function loadData() {
   const status = document.getElementById('status');
   try {
@@ -202,6 +269,7 @@ async function loadData() {
     buildSummary(); buildFilters(); renderChart(); buildAnalysis();
   } catch (e) { status.textContent = '로드 실패'; }
 }
+
 function getStats(product) {
   const items = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
   if (!items.length) return null;
@@ -217,6 +285,7 @@ function getStats(product) {
   const pct7 = p7 ? Math.round((chg7 / p7) * 100) : null;
   return { latest, min, max, avg, chg7, pct7, count: items.length };
 }
+
 function buildSummary() {
   const products = [...new Set(rawData.map(d => d.product))];
   const sorted = products.sort((a,b) => {
@@ -228,17 +297,17 @@ function buildSummary() {
     if (!s) return '';
     let chg = '';
     if (s.chg7 != null) {
-      const cls = s.chg7 > 0 ? 'up' : s.chg7 < 0 ? 'down' : '';
+      const cls = s.chg7 > 0 ? 'up' : s.chg7 < 0 ? 'down' : 'flat';
       const sign = s.chg7 > 0 ? '+' : '';
       chg = '<div class="card-change ' + cls + '">' + sign + s.chg7.toLocaleString() + '</div>';
     }
-    const icon = pork ? '🐷' : '🐂';
     return '<div class="summary-card ' + (pork ? 'pork' : 'beef') + '">' +
-      '<div class="card-top"><span class="icon">' + icon + '</span><span class="card-name">' + shortName(p) + '</span></div>' +
+      '<div class="card-name">' + shortName(p) + '</div>' +
       '<div class="card-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
     '</div>';
   }).join('');
 }
+
 function buildAnalysis() {
   const products = [...new Set(rawData.map(d => d.product))];
   const sorted = products.sort((a,b) => {
@@ -248,15 +317,14 @@ function buildAnalysis() {
   document.getElementById('analysis').innerHTML = sorted.map(p => {
     const pork = isPork(p), s = getStats(p);
     if (!s) return '';
-    const icon = pork ? '🐷' : '🐂';
     function fmt(v, pct) {
       if (v == null) return '-';
       const cls = v > 0 ? 'up' : v < 0 ? 'down' : '';
       const sign = v > 0 ? '+' : '';
-      return '<span class="metric-value ' + cls + '">' + sign + v.toLocaleString() + (pct ? ' (' + sign + pct + '%)' : '') + '</span>';
+      return '<div class="metric-value ' + cls + '">' + sign + v.toLocaleString() + (pct ? ' (' + sign + pct + '%)' : '') + '</div>';
     }
     return '<div class="analysis-item ' + (pork ? 'pork' : 'beef') + '">' +
-      '<h3>' + icon + ' ' + shortName(p) + '</h3>' +
+      '<h3>' + shortName(p) + '</h3>' +
       '<div class="metrics">' +
         '<div><div class="metric-label">현재</div><div class="metric-value">' + s.latest.price.toLocaleString() + '</div></div>' +
         '<div><div class="metric-label">7일</div>' + fmt(s.chg7, s.pct7) + '</div>' +
@@ -267,6 +335,7 @@ function buildAnalysis() {
       '</div></div>';
   }).join('');
 }
+
 function buildFilters() {
   const products = [...new Set(rawData.map(d => d.product))].sort((a,b) => isPork(a) - isPork(b));
   const container = document.getElementById('filters');
@@ -285,12 +354,14 @@ function buildFilters() {
     container.appendChild(chip);
   });
 }
+
 function updateChips() {
   document.querySelectorAll('.chip').forEach(c => {
     const isAll = !c.dataset.product;
     c.classList.toggle('active', selectedProduct === null ? isAll : c.dataset.product === selectedProduct);
   });
 }
+
 function getFiltered() {
   let data = rawData;
   if (selectedProduct) data = data.filter(d => d.product === selectedProduct);
@@ -305,6 +376,7 @@ function getFiltered() {
   }
   return data;
 }
+
 function groupKey(date, unit) {
   if (unit === 'day') return date;
   if (unit === 'month') return date.slice(0, 7);
@@ -314,11 +386,13 @@ function groupKey(date, unit) {
   }
   return date;
 }
+
 function formatLabel(key, unit) {
   if (unit === 'day') return formatDate(key);
   if (unit === 'month') return key.slice(2, 4) + '.' + key.slice(5);
   return key.replace('-', ' ');
 }
+
 function renderChart() {
   const data = getFiltered();
   const all = [...new Set(rawData.map(d => d.product))];
@@ -366,6 +440,7 @@ function renderChart() {
     }
   });
 }
+
 document.querySelectorAll('[data-days]').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
@@ -392,6 +467,7 @@ document.querySelectorAll('[data-type]').forEach(btn => {
     renderChart();
   };
 });
+
 loadData();
 </script>
 </body>
