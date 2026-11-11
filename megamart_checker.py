@@ -28,6 +28,7 @@ RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL")
 if not RECEIVER_EMAIL:
     logging.error("RECEIVER_EMAIL environment variable is not set!")
     sys.exit(1)
+NTFY_TOPIC = os.getenv("NTFY_TOPIC", "meat-price-alert-pyw31337")
 BEEF_SEARCH_URL = "https://www.megamart.com/search/?text=%ED%95%9C%EC%9A%B0+%EB%93%B1%EC%8B%AC"
 PORK_SEARCH_URL = "https://www.megamart.com/search/?text=%EC%82%BC%EA%B2%B9%EC%82%B4+%EA%B5%AD%EB%82%B4%EC%82%B0"
 BEEF_PRICE_THRESHOLD = 7000  # Alert if beef price is <= 7000 KRW/100g
@@ -132,6 +133,35 @@ def send_email(subject, body, attachment_path=None):
                 
     except Exception as e:
         logging.error(f"Failed to send notification: {e}")
+        return False
+
+def send_ntfy(title, message):
+    try:
+        if not NTFY_TOPIC:
+            return False
+        logging.info(f"Sending ntfy notification to topic: {NTFY_TOPIC}")
+        url = f"https://ntfy.sh/{NTFY_TOPIC}"
+        data = message.encode('utf-8')
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={
+                'Title': title,
+                'Priority': 'high',
+                'Tags': 'meat,price',
+                'Click': 'https://pyw31337.github.io/meat/'
+            },
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                logging.info("ntfy notification sent successfully!")
+                return True
+            else:
+                logging.error(f"ntfy failed with status {response.status}")
+                return False
+    except Exception as e:
+        logging.error(f"Failed to send ntfy: {e}")
         return False
 
 def init_driver():
@@ -1126,6 +1156,9 @@ https://pyw31337.github.io/meat/
 ※ 이 메일은 자동 발송되었습니다.
 """
         sent_success = send_email(email_subject, email_body, attachment_path="history/price_trend.png")
+        # Also send ntfy push notification
+        ntfy_msg = f"가격 인하 감지!\n\n[소고기]\n{beef_list_str}\n\n[돼지고기]\n{pork_list_str}\n\n대시보드: https://pyw31337.github.io/meat/"
+        send_ntfy(email_subject, ntfy_msg)
         if sent_success:
             try:
                 os.makedirs("history", exist_ok=True)
