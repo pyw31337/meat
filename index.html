@@ -136,6 +136,25 @@ button.pork.active { background: var(--pork); }
 .pc-metric-label { color: var(--muted); }
 .pc-metric-value { font-weight: 600; }
 
+.buy-btn {
+  display: block;
+  margin-top: 10px;
+  padding: 6px 0;
+  background: #0f172a;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.buy-btn:hover { background: #334155; }
+.product-card.beef .buy-btn { background: var(--beef); }
+.product-card.pork .buy-btn { background: var(--pork); }
+.product-card.beef .buy-btn:hover { background: #b91c1c; }
+.product-card.pork .buy-btn:hover { background: #1d4ed8; }
+
 footer { text-align: center; color: var(--muted); font-size: 0.7rem; margin-top: 20px; }
 footer a { color: var(--pork); text-decoration: none; }
 </style>
@@ -188,13 +207,14 @@ footer a { color: var(--pork); text-decoration: none; }
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
 
+const WEEKDAYS = ['일','월','화','수','목','금','토'];
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d)) return iso;
   const yy = String(d.getFullYear()).slice(2);
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  return yy + '.' + mm + '.' + dd;
+  return yy + '.' + mm + '.' + dd + '(' + WEEKDAYS[d.getDay()] + ')';
 }
 
 function isPork(name) { return name.includes('삼겹살'); }
@@ -276,6 +296,7 @@ function buildProducts() {
       chg = '<div class="pc-change ' + cls + '">' + sign + s.chg7.toLocaleString() + (s.pct7 ? ' (' + sign + s.pct7 + '%)' : '') + '</div>';
     }
     const active = focusedProduct === p ? ' active' : '';
+    const buyUrl = 'https://www.megamart.com/search?query=' + encodeURIComponent(shortName(p));
     return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
@@ -284,7 +305,9 @@ function buildProducts() {
         '<div><span class="pc-metric-label">최고</span> <span class="pc-metric-value">' + s.max.toLocaleString() + '</span></div>' +
         '<div><span class="pc-metric-label">평균</span> <span class="pc-metric-value">' + s.avg.toLocaleString() + '</span></div>' +
         '<div><span class="pc-metric-label">일수</span> <span class="pc-metric-value">' + s.count + '</span></div>' +
-      '</div></div>';
+      '</div>' +
+      '<a href="' + buyUrl + '" target="_blank" class="buy-btn" onclick="event.stopPropagation()">구매하러 가기</a>' +
+    '</div>';
   }).join('');
   
   document.querySelectorAll('.product-card').forEach(card => {
