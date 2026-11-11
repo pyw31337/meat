@@ -61,7 +61,7 @@ button.pork.active { background: var(--pork); }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
 .pc-change.up { color: var(--up); } .pc-change.down { color: var(--down); }
 .sparkline { position: relative; margin: 6px 0; cursor: crosshair; }
-.sparkline svg { width: 100%; height: 32px; display: block; }
+.sparkline canvas { width: 100%; height: 32px; display: block; }
 .spark-labels { display: flex; justify-content: space-between; font-size: 0.6rem; color: #94a3b8; margin-top: 2px; padding: 0 2px; }
 .spark-tooltip {
   position: absolute; background: #0f172a; color: #fff; font-size: 0.68rem;
@@ -216,7 +216,7 @@ function buildProducts() {
     '</div>';
   }).join('');
 
-  // Render 7-day sparklines with dots and separate weekday labels
+  // Render 7-day sparklines with canvas (keeps circles round)
   document.querySelectorAll('.sparkline').forEach(el => {
     const product = el.dataset.product;
     const allItems = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
@@ -229,20 +229,7 @@ function buildProducts() {
     const latest = prices[prices.length - 1];
     const vsAvg = latest - avg;
     const vsAvgPct = avg ? Math.round((vsAvg / avg) * 100) : 0;
-    const w = 100, h = 32;
-    const points = prices.map((pr, i) => {
-      const x = (i / Math.max(prices.length - 1, 1)) * w;
-      const y = h - ((pr - min) / range) * (h - 6) - 3;
-      return x + ',' + y;
-    }).join(' ');
-    const avgY = h - ((avg - min) / range) * (h - 6) - 3;
     const color = isPork(product) ? '#2563eb' : '#dc2626';
-    let circles = '';
-    items.forEach((item, i) => {
-      const x = (i / Math.max(items.length - 1, 1)) * w;
-      const y = h - ((item.price - min) / range) * (h - 6) - 3;
-      circles += '<circle cx="' + x + '" cy="' + y + '" r="2.5" fill="' + color + '"/>';
-    });
     const labels = items.map(item => {
       const d = new Date(item.date + 'T00:00:00');
       return '<span>' + WEEKDAYS[d.getDay()] + '</span>';
@@ -250,18 +237,56 @@ function buildProducts() {
     const vsCls = vsAvg > 0 ? 'up' : vsAvg < 0 ? 'down' : '';
     const vsSign = vsAvg > 0 ? '+' : '';
     const vsLabel = vsSign + vsAvgPct + '%';
-    el.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-      '<line x1="0" y1="' + avgY + '" x2="' + w + '" y2="' + avgY + '" stroke="#94a3b8" stroke-width="0.6" stroke-dasharray="2,2"/>' +
-      '<polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + points + '"/>' +
-      circles +
-      '</svg>' +
+    el.innerHTML = '<canvas></canvas>' +
       '<div class="spark-labels">' + labels + '</div>' +
       '<div class="spark-vs-avg ' + vsCls + '">' + vsLabel + '</div>' +
       '<div class="spark-tooltip"></div>';
+    const canvas = el.querySelector('canvas');
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 160;
+    const cssH = 32;
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const pad = 4;
+    const plotW = cssW - pad * 2;
+    const plotH = cssH - pad * 2;
+    // Average line
+    const avgY = pad + plotH - ((avg - min) / range) * plotH;
+    ctx.setLineDash([2, 2]);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(pad, avgY);
+    ctx.lineTo(cssW - pad, avgY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    prices.forEach((pr, i) => {
+      const x = pad + (i / Math.max(prices.length - 1, 1)) * plotW;
+      const y = pad + plotH - ((pr - min) / range) * plotH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Circles
+    ctx.fillStyle = color;
+    prices.forEach((pr, i) => {
+      const x = pad + (i / Math.max(prices.length - 1, 1)) * plotW;
+      const y = pad + plotH - ((pr - min) / range) * plotH;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
     el.onmousemove = (e) => {
-      const rect = el.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
-      const idx = Math.round((x / rect.width) * (items.length - 1));
+      const idx = Math.round(((x - pad) / plotW) * (items.length - 1));
       const clamped = Math.max(0, Math.min(idx, items.length - 1));
       const item = items[clamped];
       const tip = el.querySelector('.spark-tooltip');
