@@ -15,18 +15,17 @@
 body { margin: 0; font-family: 'Noto Sans KR', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.4; }
 .container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
 header { margin-bottom: 16px; }
-h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.02em; }
+h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 2px; }
 .subtitle { color: var(--muted); font-size: 0.8rem; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .btn-group { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-button { background: transparent; color: var(--muted); border: none; padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 500; }
-button:hover { color: var(--text); }
+button { background: transparent; color: var(--muted); border: none; padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.78rem; }
 button.active { background: var(--text); color: #fff; }
 button.beef.active { background: var(--beef); }
 button.pork.active { background: var(--pork); }
 .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
 .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.chart-header h2 { margin: 0; font-size: 0.9rem; font-weight: 600; }
+.chart-header h2 { margin: 0; font-size: 0.9rem; }
 .legend { display: flex; gap: 12px; font-size: 0.72rem; color: var(--muted); }
 .legend span { display: flex; align-items: center; gap: 4px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -34,23 +33,29 @@ button.pork.active { background: var(--pork); }
 .chart-wrap { position: relative; height: 460px; }
 .status { font-size: 0.7rem; color: var(--muted); margin-top: 8px; }
 .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.product-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; }
+.product-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
 .product-card:hover { border-color: #94a3b8; }
-.product-card.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--text); }
+.product-card.active { box-shadow: 0 0 0 2px var(--text); }
 .product-card.beef { border-top: 3px solid var(--beef); }
 .product-card.pork { border-top: 3px solid var(--pork); }
-.product-card.beef.active { border-color: var(--beef); box-shadow: 0 0 0 2px var(--beef); }
-.product-card.pork.active { border-color: var(--pork); box-shadow: 0 0 0 2px var(--pork); }
+.product-card.beef.active { box-shadow: 0 0 0 2px var(--beef); }
+.product-card.pork.active { box-shadow: 0 0 0 2px var(--pork); }
 .pc-name { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-.pc-price { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+.pc-price { font-size: 1.3rem; font-weight: 700; }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
 .pc-change.up { color: var(--up); } .pc-change.down { color: var(--down); }
+.sparkline { position: relative; height: 32px; margin: 6px 0; cursor: crosshair; }
+.sparkline svg { width: 100%; height: 100%; display: block; }
+.spark-tooltip {
+  position: absolute; background: #0f172a; color: #fff; font-size: 0.68rem;
+  padding: 3px 6px; border-radius: 4px; pointer-events: none; white-space: nowrap;
+  transform: translate(-50%, -100%); opacity: 0; transition: opacity 0.1s; z-index: 10;
+}
+.spark-tooltip.visible { opacity: 1; }
 .pc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.7rem; }
 .pc-metric-label { color: var(--muted); } .pc-metric-value { font-weight: 600; }
-.buy-btn { display: block; margin-top: 10px; padding: 6px 0; background: #0f172a; color: #fff; text-align: center; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-decoration: none; transition: background 0.15s; }
-.buy-btn:hover { background: #334155; }
+.buy-btn { display: block; margin-top: 10px; padding: 6px 0; background: #0f172a; color: #fff; text-align: center; border-radius: 6px; font-size: 0.75rem; text-decoration: none; }
 .product-card.beef .buy-btn { background: var(--beef); } .product-card.pork .buy-btn { background: var(--pork); }
-.product-card.beef .buy-btn:hover { background: #b91c1c; } .product-card.pork .buy-btn:hover { background: #1d4ed8; }
 footer { text-align: center; color: var(--muted); font-size: 0.7rem; margin-top: 20px; }
 footer a { color: var(--pork); text-decoration: none; }
 </style>
@@ -107,8 +112,7 @@ function shortName(name) {
   return name.replace(' (국내산) 100g','').replace('구이용','').replace('한우 등심 ','').replace('돼지 ','').trim();
 }
 let rawData = [], chart = null, productIds = {};
-let selectedDays = 0, selectedType = 'all', selectedUnit = 'day';
-let focusedProduct = null;
+let selectedDays = 0, selectedType = 'all', selectedUnit = 'day', focusedProduct = null;
 const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171'];
 const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa'];
 function getColor(product, all) {
@@ -121,9 +125,7 @@ function calcMA(values, period) {
   for (let i = 0; i < values.length; i++) {
     if (i < period - 1 || values[i] == null) { result.push(null); continue; }
     let sum = 0, count = 0;
-    for (let j = 0; j < period; j++) {
-      if (values[i - j] != null) { sum += values[i - j]; count++; }
-    }
+    for (let j = 0; j < period; j++) { if (values[i - j] != null) { sum += values[i - j]; count++; } }
     result.push(count === period ? Math.round(sum / period) : null);
   }
   return result;
@@ -181,6 +183,7 @@ function buildProducts() {
     return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
+      '<div class="sparkline" data-product="' + p + '"></div>' +
       '<div class="pc-metrics">' +
         '<div><span class="pc-metric-label">최저</span> <span class="pc-metric-value">' + s.min.toLocaleString() + '</span></div>' +
         '<div><span class="pc-metric-label">최고</span> <span class="pc-metric-value">' + s.max.toLocaleString() + '</span></div>' +
@@ -190,6 +193,43 @@ function buildProducts() {
       '<a href="' + buyUrl + '" target="_blank" class="buy-btn" onclick="event.stopPropagation()">구매하러 가기</a>' +
     '</div>';
   }).join('');
+
+  // Render sparklines
+  document.querySelectorAll('.sparkline').forEach(el => {
+    const product = el.dataset.product;
+    const items = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
+    if (items.length < 2) return;
+    const prices = items.map(d => d.price);
+    const min = Math.min(...prices), max = Math.max(...prices);
+    const range = max - min || 1;
+    const w = 100, h = 32;
+    const points = prices.map((pr, i) => {
+      const x = (i / (prices.length - 1)) * w;
+      const y = h - ((pr - min) / range) * (h - 4) - 2;
+      return x + ',' + y;
+    }).join(' ');
+    const color = isPork(product) ? '#2563eb' : '#dc2626';
+    const lastX = w;
+    const lastY = h - ((prices[prices.length-1] - min) / range) * (h - 4) - 2;
+    el.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+      '<polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + points + '"/>' +
+      '<circle cx="' + lastX + '" cy="' + lastY + '" r="2.5" fill="' + color + '"/>' +
+      '</svg><div class="spark-tooltip"></div>';
+    el.onmousemove = (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const idx = Math.round((x / rect.width) * (prices.length - 1));
+      const clamped = Math.max(0, Math.min(idx, prices.length - 1));
+      const item = items[clamped];
+      const tip = el.querySelector('.spark-tooltip');
+      tip.textContent = formatDate(item.date) + ' · ' + item.price.toLocaleString() + '원';
+      tip.style.left = x + 'px';
+      tip.style.top = '0px';
+      tip.classList.add('visible');
+    };
+    el.onmouseleave = () => el.querySelector('.spark-tooltip').classList.remove('visible');
+  });
+
   document.querySelectorAll('.product-card').forEach(card => {
     card.onclick = () => {
       const p = card.dataset.product;
@@ -205,18 +245,14 @@ function getFiltered() {
   if (selectedType === 'pork') data = data.filter(d => isPork(d.product));
   if (selectedDays > 0) {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - selectedDays);
-    const cut = cutoff.toISOString().slice(0,10);
-    data = data.filter(d => d.date >= cut);
+    data = data.filter(d => d.date >= cutoff.toISOString().slice(0,10));
   }
   return data;
 }
 function groupKey(date, unit) {
   if (unit === 'day') return date;
   if (unit === 'month') return date.slice(0, 7);
-  if (unit === 'quarter') {
-    const [y, m] = date.split('-');
-    return y + '-Q' + Math.ceil(parseInt(m) / 3);
-  }
+  if (unit === 'quarter') { const [y, m] = date.split('-'); return y + '-Q' + Math.ceil(parseInt(m) / 3); }
   return date;
 }
 function formatLabel(key, unit) {
@@ -227,7 +263,7 @@ function formatLabel(key, unit) {
 function renderChart() {
   const data = getFiltered();
   const all = [...new Set(rawData.map(d => d.product))];
-  let products = [...new Set(data.map(d => d.product))];
+  const products = [...new Set(data.map(d => d.product))];
   const groups = [...new Set(data.map(d => groupKey(d.date, selectedUnit)))].sort();
   const labels = groups.map(g => formatLabel(g, selectedUnit));
   const datasets = [];
@@ -242,26 +278,20 @@ function renderChart() {
       if (!map.has(g)) map.set(g, []);
       map.get(g).push(d.price);
     });
-    const values = groups.map(g => {
-      const arr = map.get(g);
-      return arr ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : null;
-    });
+    const values = groups.map(g => { const arr = map.get(g); return arr ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : null; });
     datasets.push({
       label: shortName(p), data: values,
       borderColor: isDimmed ? '#d1d5db' : color,
       backgroundColor: isDimmed ? 'transparent' : color + '15',
       tension: 0.3, spanGaps: true,
       pointRadius: isFocused ? 3 : (isDimmed ? 0 : 2),
-      pointHoverRadius: 5,
       borderWidth: isFocused ? 3 : (isDimmed ? 1 : 2),
       borderDash: pork && !isDimmed ? [4, 3] : [],
       order: isFocused ? 0 : 1
     });
     if (isFocused && selectedUnit === 'day') {
-      const ma7 = calcMA(values, 7);
-      const ma30 = calcMA(values, 30);
-      datasets.push({ label: shortName(p) + ' MA7', data: ma7, borderColor: '#f59e0b', borderWidth: 1.5, borderDash: [2, 2], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
-      datasets.push({ label: shortName(p) + ' MA30', data: ma30, borderColor: '#8b5cf6', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
+      datasets.push({ label: shortName(p) + ' MA7', data: calcMA(values, 7), borderColor: '#f59e0b', borderWidth: 1.5, borderDash: [2, 2], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
+      datasets.push({ label: shortName(p) + ' MA30', data: calcMA(values, 30), borderColor: '#8b5cf6', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
     }
   });
   if (chart) chart.destroy();
@@ -270,10 +300,7 @@ function renderChart() {
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: { backgroundColor: 'rgba(15,23,42,0.95)', padding: 8, cornerRadius: 6, callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y ? c.parsed.y.toLocaleString() + '원' : '-') } }
-      },
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(15,23,42,0.95)', padding: 8, cornerRadius: 6, callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y ? c.parsed.y.toLocaleString() + '원' : '-') } } },
       scales: {
         x: { ticks: { color: '#94a3b8', maxRotation: 0, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
         y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => (v/1000) + 'k' }, grid: { color: '#f1f5f9' }, border: { display: false } }
