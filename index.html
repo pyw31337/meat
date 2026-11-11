@@ -8,12 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --bg: #0f1419;
-            --card: #1a1f2e;
-            --text: #e6edf3;
-            --muted: #8b949e;
-            --accent: #58a6ff;
-            --border: #30363d;
+            --bg: #ffffff;
+            --card: #f8f9fa;
+            --text: #1a1a1a;
+            --muted: #666666;
+            --accent: #2563eb;
+            --border: #e5e7eb;
+            --beef: #dc2626;
+            --pork: #16a34a;
         }
         * { box-sizing: border-box; }
         body {
@@ -23,46 +25,50 @@
             color: var(--text);
             line-height: 1.5;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
         header { text-align: center; margin-bottom: 28px; }
-        h1 { font-size: 1.8rem; margin: 0 0 8px; font-weight: 700; }
+        h1 { font-size: 1.75rem; margin: 0 0 6px; font-weight: 700; color: #111; }
         .subtitle { color: var(--muted); font-size: 0.95rem; }
         .controls {
             display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
             background: var(--card); border: 1px solid var(--border);
-            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+            border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
         }
         .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
         button {
-            background: #21262d; color: var(--text); border: 1px solid var(--border);
+            background: #fff; color: var(--text); border: 1px solid var(--border);
             padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 0.88rem; transition: all 0.15s;
         }
-        button.active, button:hover { border-color: var(--accent); color: var(--accent); }
-        button.active { background: rgba(88,166,255,0.15); }
+        button:hover { border-color: var(--accent); color: var(--accent); }
+        button.active {
+            background: var(--accent); color: #fff; border-color: var(--accent);
+        }
         .chart-card {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 12px; padding: 16px; margin-bottom: 20px;
+            background: #fff; border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .chart-card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+        .chart-card h2 { margin: 0 0 14px; font-size: 1.1rem; font-weight: 600; }
         .chart-wrap { position: relative; height: 420px; }
-        .product-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .product-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .chip {
             display: inline-flex; align-items: center; gap: 6px;
-            background: #21262d; border: 1px solid var(--border);
-            padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; cursor: pointer;
+            background: #f3f4f6; border: 1px solid var(--border);
+            padding: 4px 10px; border-radius: 20px; font-size: 0.84rem; cursor: pointer;
         }
         .chip input { display: none; }
-        .chip.active { border-color: var(--accent); background: rgba(88,166,255,0.12); }
-        .status { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
-        .legend-note { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+        .chip.active { border-color: var(--accent); background: #eff6ff; }
+        .status { font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
+        .legend-note { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+        footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🥩 메가마트 한우 등심 & 삼겹살 가격 추이</h1>
-            <div class="subtitle">동적 차트 · 실시간 가격 데이터 · 한글 정상 표시</div>
+            <div class="subtitle">동적 차트 · 실시간 가격 데이터</div>
         </header>
 
         <div class="controls">
@@ -88,10 +94,24 @@
             <div class="status" id="status">데이터 로딩 중...</div>
             <div class="legend-note">호버하면 상세 가격이 나옵니다. 상품 칩을 끄면 해당 곡선이 숨겨집니다.</div>
         </div>
+
+        <footer>메가마트 가격 모니터링 · <a href="https://github.com/pyw31337/meat" style="color:var(--accent);">GitHub</a></footer>
     </div>
 
     <script>
         const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
+        const WEEKDAYS = ['일','월','화','수','목','금','토'];
+
+        function formatDate(iso) {
+            const d = new Date(iso + 'T00:00:00');
+            if (isNaN(d)) return iso;
+            const yy = String(d.getFullYear()).slice(2);
+            const mm = String(d.getMonth()+1).padStart(2,'0');
+            const dd = String(d.getDate()).padStart(2,'0');
+            const wd = WEEKDAYS[d.getDay()];
+            return `${yy}.${mm}.${dd}(${wd})`;
+        }
+
         let rawData = [];
         let chart = null;
         let selectedDays = 0;
@@ -113,7 +133,7 @@
                         price: parseInt(parts[2], 10)
                     };
                 }).filter(d => d.date && !isNaN(d.price));
-                status.textContent = `로드 완료: ${rawData.length}건 · 기간 ${rawData[0]?.date || '-'} ~ ${rawData[rawData.length-1]?.date || '-'}`;
+                status.textContent = `로드 완료: ${rawData.length}건 · 기간 ${formatDate(rawData[0]?.date)} ~ ${formatDate(rawData[rawData.length-1]?.date)}`;
                 buildFilters();
                 renderChart();
             } catch (e) {
@@ -159,10 +179,11 @@
             const data = getFiltered();
             const products = [...new Set(data.map(d => d.product))];
             const dates = [...new Set(data.map(d => d.date))].sort();
+            const labels = dates.map(formatDate);
 
             const colors = [
-                '#58a6ff','#f85149','#3fb950','#d29922','#bc8cff',
-                '#79c0ff','#ffa657','#56d364','#e3b341','#b392f0'
+                '#2563eb','#dc2626','#16a34a','#d97706','#7c3aed',
+                '#0891b2','#db2777','#65a30d','#ea580c','#4f46e5'
             ];
 
             const datasets = products.map((p, i) => {
@@ -171,7 +192,7 @@
                     label: p.replace(' (국내산) 100g','').replace('구이용',''),
                     data: dates.map(d => map.has(d) ? map.get(d) : null),
                     borderColor: colors[i % colors.length],
-                    backgroundColor: colors[i % colors.length] + '22',
+                    backgroundColor: colors[i % colors.length] + '18',
                     tension: 0.25,
                     spanGaps: true,
                     pointRadius: 3,
@@ -183,13 +204,13 @@
             const ctx = document.getElementById('chart').getContext('2d');
             chart = new Chart(ctx, {
                 type: 'line',
-                data: { labels: dates, datasets },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, color: '#e6edf3' } },
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, color: '#1a1a1a' } },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
@@ -197,11 +218,14 @@
                         }
                     },
                     scales: {
-                        x: { ticks: { color: '#8b949e', maxRotation: 45 }, grid: { color: '#30363d' } },
+                        x: {
+                            ticks: { color: '#666', maxRotation: 45, font: { size: 11 } },
+                            grid: { color: '#f0f0f0' }
+                        },
                         y: {
-                            ticks: { color: '#8b949e', callback: v => v.toLocaleString() },
-                            grid: { color: '#30363d' },
-                            title: { display: true, text: '원 / 100g', color: '#8b949e' }
+                            ticks: { color: '#666', callback: v => v.toLocaleString() },
+                            grid: { color: '#f0f0f0' },
+                            title: { display: true, text: '원 / 100g', color: '#666' }
                         }
                     }
                 }
