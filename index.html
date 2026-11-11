@@ -3,23 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>메가마트 한우 등심 & 삼겹살 가격 추이</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>메가마트 한우·삼겹살 가격</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #fafafa;
+  --bg: #f8fafc;
   --card: #ffffff;
-  --text: #1a1a1a;
-  --muted: #6b7280;
-  --border: #e5e7eb;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
   --beef: #dc2626;
-  --beef-soft: #fef2f2;
   --pork: #2563eb;
-  --pork-soft: #eff6ff;
-  --accent: #374151;
-  --up: #dc2626;
-  --down: #16a34a;
+  --up: #ef4444;
+  --down: #22c55e;
 }
 * { box-sizing: border-box; }
 body {
@@ -27,571 +24,374 @@ body {
   font-family: 'Noto Sans KR', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
 }
-.container { max-width: 1400px; margin: 0 auto; padding: 20px 16px 40px; }
-header {
-  text-align: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
-.subtitle { color: var(--muted); font-size: 0.9rem; }
-
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 20px 48px; }
+header { margin-bottom: 24px; }
+h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.02em; }
+.subtitle { color: var(--muted); font-size: 0.85rem; }
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
 .summary-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 12px 14px;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
 }
-.summary-card.beef { border-left: 4px solid var(--beef); }
-.summary-card.pork { border-left: 4px solid var(--pork); }
-.thumb {
-  width: 42px; height: 42px;
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-.thumb.beef { background: var(--beef-soft); }
-.thumb.pork { background: var(--pork-soft); }
-.summary-info { flex: 1; min-width: 0; }
-.summary-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; }
-.summary-price { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
-.summary-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-.change { font-size: 0.75rem; font-weight: 500; }
-.change.up { color: var(--up); }
-.change.down { color: var(--down); }
-.change.flat { color: var(--muted); }
-
-.controls {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
-}
-.btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.summary-card.beef { border-top: 3px solid var(--beef); }
+.summary-card.pork { border-top: 3px solid var(--pork); }
+.card-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.icon { font-size: 1rem; }
+.card-name { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-price { font-size: 1.25rem; font-weight: 700; }
+.card-change { font-size: 0.75rem; font-weight: 500; }
+.card-change.up { color: var(--up); }
+.card-change.down { color: var(--down); }
+.controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.btn-group { display: flex; gap: 3px; }
 button {
-  background: #fff; color: var(--text); border: 1px solid var(--border);
-  padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit;
-  font-size: 0.85rem; transition: all 0.15s;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
-button:hover { border-color: var(--accent); }
-button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.active { background: var(--text); color: #fff; border-color: var(--text); }
 button.beef.active { background: var(--beef); border-color: var(--beef); }
 button.pork.active { background: var(--pork); border-color: var(--pork); }
-
-.chart-card, .analysis-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px; margin-bottom: 16px;
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
-.chart-header, .section-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
-}
-.chart-header h2, .section-header h2 { margin: 0; font-size: 1.05rem; font-weight: 600; }
-.legend-inline { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.chart-header h2 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.legend-inline { display: flex; gap: 14px; font-size: 0.75rem; color: var(--muted); }
 .legend-inline span { display: flex; align-items: center; gap: 4px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot { width: 7px; height: 7px; border-radius: 50%; }
 .dot.beef { background: var(--beef); }
 .dot.pork { background: var(--pork); }
-.chart-wrap { position: relative; height: 720px; }
-
-.product-filters {
-  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
-  padding-top: 12px; border-top: 1px solid var(--border);
+.chart-wrap { position: relative; height: 420px; }
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 .chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: #f9fafb; border: 1px solid var(--border);
-  padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
-  line-height: 1.3;
+  background: #f1f5f9;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
 }
-.chip.beef.active { border-color: var(--beef); background: var(--beef-soft); color: var(--beef); }
-.chip.pork.active { border-color: var(--pork); background: var(--pork-soft); color: var(--pork); }
-.chip .mini-thumb {
-  width: 16px; height: 16px; border-radius: 4px;
-  display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
-  flex-shrink: 0;
-}
-
-.analysis-grid {
+.chip.active { background: var(--text); color: #fff; }
+.chip.beef.active { background: var(--beef); }
+.chip.pork.active { background: var(--pork); }
+.analysis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
 }
 .analysis-item {
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
-  background: #fafafa;
+  padding: 12px 14px;
 }
 .analysis-item.beef { border-left: 3px solid var(--beef); }
 .analysis-item.pork { border-left: 3px solid var(--pork); }
-.analysis-item h3 {
-  margin: 0 0 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  line-height: 1.3;
-}
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  padding: 3px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-.stat-row:last-child { border-bottom: none; }
-.stat-label { color: var(--muted); }
-.stat-value { font-weight: 500; }
-.stat-value.up { color: var(--up); }
-.stat-value.down { color: var(--down); }
-.badge {
-  display: inline-block;
-  font-size: 0.7rem;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: #f3f4f6;
-  color: var(--muted);
-  margin-left: 4px;
-}
-.badge.hot { background: #fef2f2; color: var(--beef); }
-.badge.deal { background: #f0fdf4; color: var(--down); }
-
-.status { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
-footer { text-align: center; color: var(--muted); font-size: 0.78rem; margin-top: 8px; }
-footer a { color: #2563eb; text-decoration: none; }
+.analysis-item h3 { margin: 0 0 8px; font-size: 0.8rem; font-weight: 600; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.metric-label { font-size: 0.68rem; color: var(--muted); }
+.metric-value { font-size: 0.85rem; font-weight: 600; }
+.metric-value.up { color: var(--up); }
+.metric-value.down { color: var(--down); }
+.status { font-size: 0.72rem; color: var(--muted); margin-top: 10px; }
+footer { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 20px; }
+footer a { color: var(--pork); text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>🥩 메가마트 한우 등심 & 삼겹살 가격 추이</h1>
-    <div class="subtitle">실시간 가격 모니터링 · 100g당 단가 기준</div>
+    <h1>메가마트 가격</h1>
+    <div class="subtitle">한우 등심 · 삼겹살 · 100g</div>
   </header>
-
   <div class="summary" id="summary"></div>
-
   <div class="controls">
-    <span style="color:var(--muted); font-size:0.85rem;">기간</span>
     <div class="btn-group">
       <button data-days="7">7일</button>
       <button data-days="30">30일</button>
       <button data-days="90">90일</button>
       <button data-days="0" class="active">전체</button>
     </div>
-    <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">단위</span>
     <div class="btn-group">
-      <button data-unit="day" class="active">일자별</button>
-      <button data-unit="month">월별</button>
-      <button data-unit="quarter">분기별</button>
+      <button data-unit="day" class="active">일</button>
+      <button data-unit="month">월</button>
+      <button data-unit="quarter">분기</button>
     </div>
-    <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">종류</span>
     <div class="btn-group">
       <button data-type="all" class="active">전체</button>
-      <button data-type="beef" class="beef">소고기</button>
-      <button data-type="pork" class="pork">돼지고기</button>
+      <button data-type="beef" class="beef">소</button>
+      <button data-type="pork" class="pork">돼지</button>
     </div>
   </div>
-
   <div class="chart-card">
     <div class="chart-header">
-      <h2>가격 추이 (100g당)</h2>
+      <h2>가격 추이</h2>
       <div class="legend-inline">
-        <span><span class="dot beef"></span>소고기 (빨은색 계열)</span>
-        <span><span class="dot pork"></span>돼지고기 (푸른색 계열)</span>
+        <span><span class="dot beef"></span>소</span>
+        <span><span class="dot pork"></span>돼지</span>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
-    <div class="product-filters" id="filters"></div>
-    <div class="status" id="status">데이터 로딩 중...</div>
+    <div class="filters" id="filters"></div>
+    <div class="status" id="status"></div>
   </div>
-
-  <div class="analysis-card">
-    <div class="section-header">
-      <h2>상세 가격 변동 분석</h2>
-    </div>
-    <div class="analysis-grid" id="analysis"></div>
-  </div>
-
-  <footer>메가마트 가격 모니터링 · <a href="https://github.com/pyw31337/meat">GitHub</a></footer>
+  <div class="analysis" id="analysis"></div>
+  <footer><a href="https://github.com/pyw31337/meat">GitHub</a></footer>
 </div>
-
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
-
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d)) return iso;
   const yy = String(d.getFullYear()).slice(2);
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  return `${yy}.${mm}.${dd}(${WEEKDAYS[d.getDay()]})`;
+  return yy + '.' + mm + '.' + dd;
 }
-
 function isPork(name) { return name.includes('삼겹살'); }
-function fullName(name) { return name; }
-
-let rawData = [];
-let chart = null;
-let selectedDays = 0;
-let selectedType = 'all';
-let selectedUnit = 'day';
-let selectedProduct = null;
-
-const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171','#fca5a5'];
-const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'];
-
-function getColor(product, allProducts) {
-  const pork = isPork(product);
-  const sameType = allProducts.filter(p => isPork(p) === pork);
-  const idx = sameType.indexOf(product);
-  const colors = pork ? PORK_COLORS : BEEF_COLORS;
-  return colors[idx % colors.length];
+function shortName(name) {
+  return name.replace(' (국내산) 100g','').replace('구이용','').replace('한우 등심 ','').replace('돼지 ','').trim();
 }
-
+let rawData = [], chart = null, selectedDays = 0, selectedType = 'all', selectedUnit = 'day', selectedProduct = null;
+const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171'];
+const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa'];
+function getColor(product, all) {
+  const pork = isPork(product);
+  const same = all.filter(p => isPork(p) === pork);
+  return (pork ? PORK_COLORS : BEEF_COLORS)[same.indexOf(product) % 6];
+}
 async function loadData() {
   const status = document.getElementById('status');
   try {
     const res = await fetch(CSV_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error('CSV 로드 실패');
     const text = await res.text();
     const lines = text.trim().split(/\r?\n/);
-    rawData = lines.slice(1).map(line => {
-      const parts = line.split(',');
-      return { date: parts[0], product: parts[1], price: parseInt(parts[2], 10) };
+    rawData = lines.slice(1).map(l => {
+      const p = l.split(',');
+      return { date: p[0], product: p[1], price: parseInt(p[2], 10) };
     }).filter(d => d.date && !isNaN(d.price));
-    status.textContent = `${rawData.length}건 로드 · ${formatDate(rawData[0]?.date)} ~ ${formatDate(rawData[rawData.length-1]?.date)}`;
-    buildSummary();
-    buildFilters();
-    renderChart();
-    buildAnalysis();
-  } catch (e) {
-    status.textContent = '데이터 로드 실패: ' + e.message;
-  }
+    status.textContent = rawData.length + '건 · ' + formatDate(rawData[0]?.date) + ' ~ ' + formatDate(rawData[rawData.length-1]?.date);
+    buildSummary(); buildFilters(); renderChart(); buildAnalysis();
+  } catch (e) { status.textContent = '로드 실패'; }
 }
-
-function getProductStats(product) {
+function getStats(product) {
   const items = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
-  if (items.length === 0) return null;
+  if (!items.length) return null;
   const prices = items.map(d => d.price);
   const latest = items[items.length - 1];
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
+  const min = Math.min(...prices), max = Math.max(...prices);
   const avg = Math.round(prices.reduce((a,b) => a+b, 0) / prices.length);
-  
-  function priceAt(daysAgo) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - daysAgo);
-    const cutStr = cutoff.toISOString().slice(0,10);
-    const past = items.filter(d => d.date <= cutStr);
-    return past.length ? past[past.length - 1].price : null;
-  }
-  
-  const p7 = priceAt(7);
-  const p30 = priceAt(30);
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+  const cutStr = cutoff.toISOString().slice(0,10);
+  const past = items.filter(d => d.date <= cutStr);
+  const p7 = past.length ? past[past.length - 1].price : null;
   const chg7 = p7 != null ? latest.price - p7 : null;
-  const chg30 = p30 != null ? latest.price - p30 : null;
   const pct7 = p7 ? Math.round((chg7 / p7) * 100) : null;
-  const pct30 = p30 ? Math.round((chg30 / p30) * 100) : null;
-  
-  const mean = prices.reduce((a,b) => a+b, 0) / prices.length;
-  const variance = prices.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / prices.length;
-  const std = Math.round(Math.sqrt(variance));
-  
-  return { latest, min, max, avg, chg7, chg30, pct7, pct30, std, count: items.length };
+  return { latest, min, max, avg, chg7, pct7, count: items.length };
 }
-
 function buildSummary() {
-  const container = document.getElementById('summary');
   const products = [...new Set(rawData.map(d => d.product))];
-  const sorted = products.sort((a, b) => {
-    const aPork = isPork(a), bPork = isPork(b);
-    if (aPork !== bPork) return aPork ? 1 : -1;
-    const sa = getProductStats(a), sb = getProductStats(b);
-    return (sb?.latest.price || 0) - (sa?.latest.price || 0);
+  const sorted = products.sort((a,b) => {
+    if (isPork(a) !== isPork(b)) return isPork(a) ? 1 : -1;
+    return (getStats(b)?.latest.price || 0) - (getStats(a)?.latest.price || 0);
   });
-
-  container.innerHTML = sorted.map(p => {
-    const pork = isPork(p);
-    const s = getProductStats(p);
+  document.getElementById('summary').innerHTML = sorted.map(p => {
+    const pork = isPork(p), s = getStats(p);
     if (!s) return '';
-    let changeHtml = '';
+    let chg = '';
     if (s.chg7 != null) {
-      const cls = s.chg7 > 0 ? 'up' : s.chg7 < 0 ? 'down' : 'flat';
+      const cls = s.chg7 > 0 ? 'up' : s.chg7 < 0 ? 'down' : '';
       const sign = s.chg7 > 0 ? '+' : '';
-      changeHtml = `<span class="change ${cls}">7일 ${sign}${s.chg7.toLocaleString()}</span>`;
+      chg = '<div class="card-change ' + cls + '">' + sign + s.chg7.toLocaleString() + '</div>';
     }
     const icon = pork ? '🐷' : '🐂';
-    return `
-      <div class="summary-card ${pork ? 'pork' : 'beef'}">
-        <div class="thumb ${pork ? 'pork' : 'beef'}">${icon}</div>
-        <div class="summary-info">
-          <div class="summary-name">${fullName(p)}</div>
-          <div class="summary-price">${s.latest.price.toLocaleString()}원</div>
-          <div class="summary-meta">${formatDate(s.latest.date)} ${changeHtml}</div>
-        </div>
-      </div>`;
+    return '<div class="summary-card ' + (pork ? 'pork' : 'beef') + '">' +
+      '<div class="card-top"><span class="icon">' + icon + '</span><span class="card-name">' + shortName(p) + '</span></div>' +
+      '<div class="card-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
+    '</div>';
   }).join('');
 }
-
 function buildAnalysis() {
-  const container = document.getElementById('analysis');
   const products = [...new Set(rawData.map(d => d.product))];
-  const sorted = products.sort((a, b) => {
-    const aPork = isPork(a), bPork = isPork(b);
-    if (aPork !== bPork) return aPork ? 1 : -1;
-    return fullName(a).localeCompare(fullName(b));
+  const sorted = products.sort((a,b) => {
+    if (isPork(a) !== isPork(b)) return isPork(a) ? 1 : -1;
+    return shortName(a).localeCompare(shortName(b));
   });
-
-  container.innerHTML = sorted.map(p => {
-    const pork = isPork(p);
-    const s = getProductStats(p);
+  document.getElementById('analysis').innerHTML = sorted.map(p => {
+    const pork = isPork(p), s = getStats(p);
     if (!s) return '';
     const icon = pork ? '🐷' : '🐂';
-    
-    function fmtChg(v, pct) {
-      if (v == null) return '<span class="stat-value">-</span>';
+    function fmt(v, pct) {
+      if (v == null) return '-';
       const cls = v > 0 ? 'up' : v < 0 ? 'down' : '';
       const sign = v > 0 ? '+' : '';
-      return `<span class="stat-value ${cls}">${sign}${v.toLocaleString()}원${pct != null ? ` (${sign}${pct}%)` : ''}</span>`;
+      return '<span class="metric-value ' + cls + '">' + sign + v.toLocaleString() + (pct ? ' (' + sign + pct + '%)' : '') + '</span>';
     }
-    
-    const range = s.max - s.min;
-    const rangePct = s.min ? Math.round((range / s.min) * 100) : 0;
-    let badge = '';
-    if (s.pct7 != null && s.pct7 <= -10) badge = '<span class="badge deal">할인</span>';
-    else if (s.pct7 != null && s.pct7 >= 10) badge = '<span class="badge hot">상승</span>';
-    
-    return `
-      <div class="analysis-item ${pork ? 'pork' : 'beef'}">
-        <h3>${icon} ${fullName(p)} ${badge}</h3>
-        <div class="stat-row"><span class="stat-label">현재가</span><span class="stat-value">${s.latest.price.toLocaleString()}원</span></div>
-        <div class="stat-row"><span class="stat-label">7일 변동</span>${fmtChg(s.chg7, s.pct7)}</div>
-        <div class="stat-row"><span class="stat-label">30일 변동</span>${fmtChg(s.chg30, s.pct30)}</div>
-        <div class="stat-row"><span class="stat-label">최저 / 최고</span><span class="stat-value">${s.min.toLocaleString()} / ${s.max.toLocaleString()}</span></div>
-        <div class="stat-row"><span class="stat-label">평균</span><span class="stat-value">${s.avg.toLocaleString()}원</span></div>
-        <div class="stat-row"><span class="stat-label">변동폭 (최고-최저)</span><span class="stat-value">${range.toLocaleString()}원 (${rangePct}%)</span></div>
-        <div class="stat-row"><span class="stat-label">표준편차</span><span class="stat-value">${s.std.toLocaleString()}원</span></div>
-        <div class="stat-row"><span class="stat-label">관찰 일수</span><span class="stat-value">${s.count}일</span></div>
-      </div>`;
+    return '<div class="analysis-item ' + (pork ? 'pork' : 'beef') + '">' +
+      '<h3>' + icon + ' ' + shortName(p) + '</h3>' +
+      '<div class="metrics">' +
+        '<div><div class="metric-label">현재</div><div class="metric-value">' + s.latest.price.toLocaleString() + '</div></div>' +
+        '<div><div class="metric-label">7일</div>' + fmt(s.chg7, s.pct7) + '</div>' +
+        '<div><div class="metric-label">최저</div><div class="metric-value">' + s.min.toLocaleString() + '</div></div>' +
+        '<div><div class="metric-label">최고</div><div class="metric-value">' + s.max.toLocaleString() + '</div></div>' +
+        '<div><div class="metric-label">평균</div><div class="metric-value">' + s.avg.toLocaleString() + '</div></div>' +
+        '<div><div class="metric-label">일수</div><div class="metric-value">' + s.count + '</div></div>' +
+      '</div></div>';
   }).join('');
 }
-
 function buildFilters() {
   const products = [...new Set(rawData.map(d => d.product))].sort((a,b) => isPork(a) - isPork(b));
   const container = document.getElementById('filters');
   container.innerHTML = '';
-  
-  const allChip = document.createElement('label');
-  allChip.className = 'chip active';
-  allChip.style.fontWeight = '600';
-  allChip.innerHTML = `<span>전체</span>`;
-  allChip.addEventListener('click', () => {
-    selectedProduct = null;
-    updateChipStates();
-    renderChart();
-  });
-  container.appendChild(allChip);
-  
+  const all = document.createElement('label');
+  all.className = 'chip active';
+  all.textContent = '전체';
+  all.onclick = () => { selectedProduct = null; updateChips(); renderChart(); };
+  container.appendChild(all);
   products.forEach(p => {
-    const pork = isPork(p);
     const chip = document.createElement('label');
-    chip.className = `chip ${pork ? 'pork' : 'beef'}`;
+    chip.className = 'chip ' + (isPork(p) ? 'pork' : 'beef');
     chip.dataset.product = p;
-    const icon = pork ? '🐷' : '🐂';
-    chip.innerHTML = `<span class="mini-thumb">${icon}</span><span>${fullName(p)}</span>`;
-    chip.addEventListener('click', () => {
-      selectedProduct = p;
-      updateChipStates();
-      renderChart();
-    });
+    chip.textContent = shortName(p);
+    chip.onclick = () => { selectedProduct = p; updateChips(); renderChart(); };
     container.appendChild(chip);
   });
 }
-
-function updateChipStates() {
-  document.querySelectorAll('.chip').forEach(chip => {
-    const isAll = !chip.dataset.product;
-    const isSelected = selectedProduct === null ? isAll : chip.dataset.product === selectedProduct;
-    chip.classList.toggle('active', isSelected);
+function updateChips() {
+  document.querySelectorAll('.chip').forEach(c => {
+    const isAll = !c.dataset.product;
+    c.classList.toggle('active', selectedProduct === null ? isAll : c.dataset.product === selectedProduct);
   });
 }
-
 function getFiltered() {
   let data = rawData;
-  if (selectedProduct) {
-    data = data.filter(d => d.product === selectedProduct);
-  } else {
+  if (selectedProduct) data = data.filter(d => d.product === selectedProduct);
+  else {
     if (selectedType === 'beef') data = data.filter(d => !isPork(d.product));
     if (selectedType === 'pork') data = data.filter(d => isPork(d.product));
   }
   if (selectedDays > 0) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - selectedDays);
-    const cutStr = cutoff.toISOString().slice(0,10);
-    data = data.filter(d => d.date >= cutStr);
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - selectedDays);
+    const cut = cutoff.toISOString().slice(0,10);
+    data = data.filter(d => d.date >= cut);
   }
   return data;
 }
-
 function groupKey(date, unit) {
   if (unit === 'day') return date;
   if (unit === 'month') return date.slice(0, 7);
   if (unit === 'quarter') {
     const [y, m] = date.split('-');
-    const q = Math.ceil(parseInt(m, 10) / 3);
-    return `${y}-Q${q}`;
+    return y + '-Q' + Math.ceil(parseInt(m) / 3);
   }
   return date;
 }
-
-function formatGroupLabel(key, unit) {
+function formatLabel(key, unit) {
   if (unit === 'day') return formatDate(key);
-  if (unit === 'month') {
-    const [y, m] = key.split('-');
-    return `${y.slice(2)}.${m}`;
-  }
-  if (unit === 'quarter') {
-    return key.replace('-', ' ');
-  }
-  return key;
+  if (unit === 'month') return key.slice(2, 4) + '.' + key.slice(5);
+  return key.replace('-', ' ');
 }
-
 function renderChart() {
   const data = getFiltered();
-  const allProducts = [...new Set(rawData.map(d => d.product))];
+  const all = [...new Set(rawData.map(d => d.product))];
   const products = [...new Set(data.map(d => d.product))];
-  
   const groups = [...new Set(data.map(d => groupKey(d.date, selectedUnit)))].sort();
-  const labels = groups.map(g => formatGroupLabel(g, selectedUnit));
-  
+  const labels = groups.map(g => formatLabel(g, selectedUnit));
   const datasets = products.map(p => {
-    const color = getColor(p, allProducts);
+    const color = getColor(p, all);
     const pork = isPork(p);
-    const productData = data.filter(d => d.product === p);
-    
-    const groupMap = new Map();
-    productData.forEach(d => {
+    const map = new Map();
+    data.filter(d => d.product === p).forEach(d => {
       const g = groupKey(d.date, selectedUnit);
-      if (!groupMap.has(g)) groupMap.set(g, []);
-      groupMap.get(g).push(d.price);
+      if (!map.has(g)) map.set(g, []);
+      map.get(g).push(d.price);
     });
-    
     const values = groups.map(g => {
-      const prices = groupMap.get(g);
-      if (!prices || prices.length === 0) return null;
-      return Math.round(prices.reduce((a,b) => a+b, 0) / prices.length);
+      const arr = map.get(g);
+      return arr ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : null;
     });
-    
     return {
-      label: fullName(p),
-      data: values,
-      borderColor: color,
-      backgroundColor: color + '22',
-      tension: 0.25,
-      spanGaps: true,
-      pointRadius: 3,
-      borderWidth: 2,
-      borderDash: pork ? [5, 3] : []
+      label: shortName(p), data: values, borderColor: color, backgroundColor: color + '15',
+      tension: 0.3, spanGaps: true, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2,
+      borderDash: pork ? [4, 3] : []
     };
   });
-
   if (chart) chart.destroy();
-  const ctx = document.getElementById('chart').getContext('2d');
-  chart = new Chart(ctx, {
+  chart = new Chart(document.getElementById('chart'), {
     type: 'line',
     data: { labels, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 12,
-            padding: 12,
-            font: { size: 12, family: "'Noto Sans KR', sans-serif" },
-            color: '#374151',
-            usePointStyle: true,
-            pointStyle: 'circle'
-          }
-        },
+        legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(17, 24, 39, 0.95)',
-          titleFont: { size: 13, family: "'Noto Sans KR', sans-serif", weight: '600' },
-          bodyFont: { size: 12, family: "'Noto Sans KR', sans-serif" },
-          padding: 12,
-          cornerRadius: 8,
-          displayColors: true,
-          boxPadding: 4,
-          callbacks: {
-            label: (ctx) => ' ' + ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
-          }
+          backgroundColor: 'rgba(15,23,42,0.95)',
+          padding: 8, cornerRadius: 6,
+          callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y ? c.parsed.y.toLocaleString() + '원' : '-') }
         }
       },
       scales: {
-        x: {
-          ticks: { color: '#6b7280', maxRotation: 40, font: { size: 11, family: "'Noto Sans KR', sans-serif" } },
-          grid: { color: '#f3f4f6', drawBorder: false },
-          border: { display: false }
-        },
-        y: {
-          ticks: { color: '#6b7280', font: { size: 11, family: "'Noto Sans KR', sans-serif" }, callback: v => v.toLocaleString() },
-          grid: { color: '#f3f4f6', drawBorder: false },
-          border: { display: false },
-          title: { display: true, text: '원 / 100g', color: '#6b7280', font: { size: 12, family: "'Noto Sans KR', sans-serif" } }
-        }
-      },
-      elements: {
-        line: { borderWidth: 2.5, tension: 0.3 },
-        point: { radius: 3, hoverRadius: 6, borderWidth: 2, hoverBorderWidth: 2 }
+        x: { ticks: { color: '#94a3b8', maxRotation: 0, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => (v/1000) + 'k' }, grid: { color: '#f1f5f9' }, border: { display: false } }
       }
     }
   });
 }
-
 document.querySelectorAll('[data-days]').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.onclick = () => {
     document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    selectedDays = parseInt(btn.dataset.days, 10);
+    selectedDays = parseInt(btn.dataset.days);
     renderChart();
-  });
+  };
 });
 document.querySelectorAll('[data-unit]').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.onclick = () => {
     document.querySelectorAll('[data-unit]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedUnit = btn.dataset.unit;
     renderChart();
-  });
+  };
 });
 document.querySelectorAll('[data-type]').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.onclick = () => {
     document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedType = btn.dataset.type;
     selectedProduct = null;
-    updateChipStates();
+    updateChips();
     renderChart();
-  });
+  };
 });
-
 loadData();
 </script>
 </body>
