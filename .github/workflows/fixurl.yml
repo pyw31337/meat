@@ -1,0 +1,18 @@
+name: Fix URL
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch
+        run: |
+          python3 patch_url.py
+          git config user.name "pyw31337"
+          git config user.email "pyw213@naver.com"
+          git add index.html
+          git commit -m "fix: correct megamart search URL" || true
+          git push
