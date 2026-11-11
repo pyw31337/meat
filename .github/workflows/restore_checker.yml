@@ -1,5 +1,8 @@
 name: Restore Checker
 on:
+  push:
+    paths:
+      - '.github/workflows/restore_checker.yml'
   workflow_dispatch:
 jobs:
   restore:
@@ -10,31 +13,21 @@ jobs:
         run: |
           git fetch origin aa5dddfaea0d7069ee247b6f02443a3f7e6fb6fb
           git checkout aa5dddfaea0d7069ee247b6f02443a3f7e6fb6fb -- megamart_checker.py
-          # Upgrade email body
           python3 - << 'PY'
 import pathlib
 p = pathlib.Path("megamart_checker.py")
 c = p.read_text(encoding="utf-8")
-old = """■ 실시간 인터랙티브 대시보드 바로가기 (기간/상품 다이내믹 필터링):
-- 로컬 파일: workspace의 'dashboard.html' 파일을 브라우저로 직접 열어주세요.
-- 깃허브 웹: https://github.com/pyw31337/beautiful-babbage/blob/main/dashboard.html"""
-new = """■ 실시간 가격 대시보드 (그래프 · 기간/상품 필터):
-https://pyw31337.github.io/meat/
-
-■ 쇼핑몰 바로가기:
-- 소고기 검색: {BEEF_SEARCH_URL}
-- 돼지고기 검색: {PORK_SEARCH_URL}"""
+old = "■ 실시간 인터랙티브 대시보드 바로가기 (기간/상품 다이내믹 필터링):\n- 로컬 파일: workspace의 'dashboard.html' 파일을 브라우저로 직접 열어주세요.\n- 깃허브 웹: https://github.com/pyw31337/beautiful-babbage/blob/main/dashboard.html"
+new = "■ 실시간 가격 대시보드 (그래프 · 기간/상품 필터):\nhttps://pyw31337.github.io/meat/\n\n■ 쇼핑몰 바로가기:\n- 소고기 검색: {BEEF_SEARCH_URL}\n- 돼지고기 검색: {PORK_SEARCH_URL}"
 if old in c:
     c = c.replace(old, new)
-    p.write_text(c, encoding="utf-8")
-    print("Patched email body")
 else:
-    print("Pattern not found, appending link")
     c = c.replace("이 메일은 자동 발송되었습니다.", "이 메일은 자동 발송되었습니다.\n\n■ 실시간 가격 대시보드:\nhttps://pyw31337.github.io/meat/")
-    p.write_text(c, encoding="utf-8")
+p.write_text(c, encoding="utf-8")
+print("Done")
 PY
           git config user.name "pyw31337"
           git config user.email "pyw213@naver.com"
           git add megamart_checker.py
-          git commit -m "fix: restore megamart_checker.py and add dashboard link to emails" || echo "nothing to commit"
+          git commit -m "fix: restore megamart_checker.py and add dashboard link to emails" || true
           git push
