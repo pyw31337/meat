@@ -1088,9 +1088,12 @@ def check_megamart_prices(driver, dry_run=False):
 - 소고기: {BEEF_SEARCH_URL}
 - 돼지고기: {PORK_SEARCH_URL}
 
-■ 실시간 인터랙티브 대시보드 바로가기 (기간/상품 다이내믹 필터링):
-- 로컬 파일: workspace의 'dashboard.html' 파일을 브라우저로 직접 열어주세요.
-- 깃허브 웹: https://github.com/pyw31337/beautiful-babbage/blob/main/dashboard.html
+■ 실시간 가격 대시보드 (그래프 · 기간/상품 필터):
+https://pyw31337.github.io/meat/
+
+■ 쇼핑몰 바로가기:
+- 소고기 검색: {BEEF_SEARCH_URL}
+- 돼지고기 검색: {PORK_SEARCH_URL}
 
 ※ 이 메일은 자동 발송되었습니다.
 """
@@ -1131,6 +1134,9 @@ def check_megamart_prices(driver, dry_run=False):
 {pork_list_str}
 
 현재 가격은 설정한 기준(소고기 {BEEF_PRICE_THRESHOLD:,}원 이하 / 돼지고기 {PORK_PRICE_THRESHOLD:,}원 이하)보다 높은 상태이므로, 실제 구매 알림 메일은 발송되지 않았습니다.
+
+■ 실시간 가격 대시보드:
+https://pyw31337.github.io/meat/
 """
             send_email(test_subject, test_body, attachment_path="history/price_trend.png")
         return True
