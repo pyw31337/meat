@@ -120,6 +120,8 @@ footer a { color: var(--pork); text-decoration: none; }
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
+const BEEF_SEARCH = 'https://www.megamart.com/search/?text=' + encodeURIComponent('한우 등심');
+const PORK_SEARCH = 'https://www.megamart.com/search/?text=' + encodeURIComponent('삼겹살 국내산');
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d)) return iso;
@@ -200,7 +202,7 @@ function buildProducts() {
       chg = '<div class="pc-change ' + cls + '">' + sign + s.chg7.toLocaleString() + (s.pct7 ? ' (' + sign + s.pct7 + '%)' : '') + '</div>';
     }
     const active = focusedProduct === p ? ' active' : '';
-    const buyUrl = 'https://www.megamart.com/search/?text=' + encodeURIComponent(shortName(p));
+    const buyUrl = pork ? PORK_SEARCH : BEEF_SEARCH;
     return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
