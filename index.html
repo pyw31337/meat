@@ -296,7 +296,7 @@ function buildProducts() {
       chg = '<div class="pc-change ' + cls + '">' + sign + s.chg7.toLocaleString() + (s.pct7 ? ' (' + sign + s.pct7 + '%)' : '') + '</div>';
     }
     const active = focusedProduct === p ? ' active' : '';
-    const buyUrl = 'https://www.megamart.com/search?query=' + encodeURIComponent(shortName(p));
+    const buyUrl = 'https://www.megamart.com/search/?text=' + encodeURIComponent(shortName(p));
     return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
