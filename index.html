@@ -60,7 +60,7 @@ button.pork.active { background: var(--pork); }
 .pc-price { font-size: 1.3rem; font-weight: 700; }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
 .pc-change.up { color: var(--up); } .pc-change.down { color: var(--down); }
-.sparkline { position: relative; height: 36px; margin: 6px 0; cursor: crosshair; }
+.sparkline { position: relative; height: 48px; margin: 6px 0; cursor: crosshair; }
 .sparkline svg { width: 100%; height: 100%; display: block; }
 .spark-tooltip {
   position: absolute; background: #0f172a; color: #fff; font-size: 0.68rem;
@@ -178,7 +178,6 @@ function getStats(product) {
   const p7 = past.length ? past[past.length - 1].price : null;
   const chg7 = p7 != null ? latest.price - p7 : null;
   const pct7 = p7 ? Math.round((chg7 / p7) * 100) : null;
-  // Day-over-day change
   const yesterday = items.length >= 2 ? items[items.length - 2] : null;
   const chg1 = yesterday ? latest.price - yesterday.price : null;
   return { latest, min, max, avg, chg7, pct7, chg1, count: items.length };
@@ -216,11 +215,12 @@ function buildProducts() {
     '</div>';
   }).join('');
 
-  // Render sparklines with average line
+  // Render 7-day sparklines with dots and weekday labels
   document.querySelectorAll('.sparkline').forEach(el => {
     const product = el.dataset.product;
-    const items = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
-    if (items.length < 2) return;
+    const allItems = rawData.filter(d => d.product === product).sort((a,b) => a.date.localeCompare(b.date));
+    if (allItems.length < 2) return;
+    const items = allItems.slice(-7);
     const prices = items.map(d => d.price);
     const min = Math.min(...prices), max = Math.max(...prices);
     const range = max - min || 1;
@@ -228,31 +228,40 @@ function buildProducts() {
     const latest = prices[prices.length - 1];
     const vsAvg = latest - avg;
     const vsAvgPct = avg ? Math.round((vsAvg / avg) * 100) : 0;
-    const w = 100, h = 36;
+    const w = 100, h = 48;
+    const chartH = 32;
     const points = prices.map((pr, i) => {
-      const x = (i / (prices.length - 1)) * w;
-      const y = h - ((pr - min) / range) * (h - 6) - 3;
+      const x = (i / Math.max(prices.length - 1, 1)) * w;
+      const y = chartH - ((pr - min) / range) * (chartH - 6) - 3;
       return x + ',' + y;
     }).join(' ');
-    const avgY = h - ((avg - min) / range) * (h - 6) - 3;
+    const avgY = chartH - ((avg - min) / range) * (chartH - 6) - 3;
     const color = isPork(product) ? '#2563eb' : '#dc2626';
-    const lastX = w;
-    const lastY = h - ((latest - min) / range) * (h - 6) - 3;
+    let circles = '', labels = '';
+    items.forEach((item, i) => {
+      const x = (i / Math.max(items.length - 1, 1)) * w;
+      const y = chartH - ((item.price - min) / range) * (chartH - 6) - 3;
+      const d = new Date(item.date + 'T00:00:00');
+      const wd = WEEKDAYS[d.getDay()];
+      circles += '<circle cx="' + x + '" cy="' + y + '" r="2" fill="' + color + '"/>';
+      labels += '<text x="' + x + '" y="' + (chartH + 12) + '" font-size="8" fill="#94a3b8" text-anchor="middle">' + wd + '</text>';
+    });
     const vsCls = vsAvg > 0 ? 'up' : vsAvg < 0 ? 'down' : '';
     const vsSign = vsAvg > 0 ? '+' : '';
     const vsLabel = vsSign + vsAvgPct + '%';
     el.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-      '<line x1="0" y1="' + avgY + '" x2="' + w + '" y2="' + avgY + '" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2,2"/>' +
-      '<polyline fill="none" stroke="' + color + '" stroke-width="1.5" points="' + points + '"/>' +
-      '<circle cx="' + lastX + '" cy="' + lastY + '" r="2.5" fill="' + color + '"/>' +
+      '<line x1="0" y1="' + avgY + '" x2="' + w + '" y2="' + avgY + '" stroke="#94a3b8" stroke-width="0.6" stroke-dasharray="2,2"/>' +
+      '<polyline fill="none" stroke="' + color + '" stroke-width="1.2" points="' + points + '"/>' +
+      circles +
+      labels +
       '</svg>' +
       '<div class="spark-vs-avg ' + vsCls + '">' + vsLabel + '</div>' +
       '<div class="spark-tooltip"></div>';
     el.onmousemove = (e) => {
       const rect = el.getBoundingClientRect();
       const x = e.clientX - rect.left;
-      const idx = Math.round((x / rect.width) * (prices.length - 1));
-      const clamped = Math.max(0, Math.min(idx, prices.length - 1));
+      const idx = Math.round((x / rect.width) * (items.length - 1));
+      const clamped = Math.max(0, Math.min(idx, items.length - 1));
       const item = items[clamped];
       const tip = el.querySelector('.spark-tooltip');
       tip.textContent = formatDate(item.date) + ' · ' + item.price.toLocaleString() + '원';
