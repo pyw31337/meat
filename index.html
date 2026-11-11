@@ -15,9 +15,9 @@
   --border: #e5e7eb;
   --beef: #dc2626;
   --beef-soft: #fef2f2;
-  --pork: #db2777;
-  --pork-soft: #fdf2f8;
-  --accent: #2563eb;
+  --pork: #2563eb;
+  --pork-soft: #eff6ff;
+  --accent: #374151;
   --up: #dc2626;
   --down: #16a34a;
 }
@@ -29,7 +29,7 @@ body {
   color: var(--text);
   line-height: 1.5;
 }
-.container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px 16px 40px; }
 header {
   text-align: center;
   margin-bottom: 20px;
@@ -41,7 +41,7 @@ h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -52,7 +52,7 @@ h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
   padding: 12px 14px;
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
 }
 .summary-card.beef { border-left: 4px solid var(--beef); }
 .summary-card.pork { border-left: 4px solid var(--pork); }
@@ -66,9 +66,9 @@ h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
 .thumb.beef { background: var(--beef-soft); }
 .thumb.pork { background: var(--pork-soft); }
 .summary-info { flex: 1; min-width: 0; }
-.summary-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.summary-price { font-size: 1.05rem; font-weight: 700; margin-top: 1px; }
-.summary-meta { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+.summary-name { font-weight: 600; font-size: 0.88rem; line-height: 1.3; }
+.summary-price { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+.summary-meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 .change { font-size: 0.75rem; font-weight: 500; }
 .change.up { color: var(--up); }
 .change.down { color: var(--down); }
@@ -104,7 +104,7 @@ button.pork.active { background: var(--pork); border-color: var(--pork); }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .dot.beef { background: var(--beef); }
 .dot.pork { background: var(--pork); }
-.chart-wrap { position: relative; height: 360px; }
+.chart-wrap { position: relative; height: 400px; }
 
 .product-filters {
   display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
@@ -113,19 +113,20 @@ button.pork.active { background: var(--pork); border-color: var(--pork); }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   background: #f9fafb; border: 1px solid var(--border);
-  padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+  padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+  line-height: 1.3;
 }
 .chip.beef.active { border-color: var(--beef); background: var(--beef-soft); color: var(--beef); }
 .chip.pork.active { border-color: var(--pork); background: var(--pork-soft); color: var(--pork); }
-.chip input { display: none; }
 .chip .mini-thumb {
   width: 16px; height: 16px; border-radius: 4px;
   display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+  flex-shrink: 0;
 }
 
 .analysis-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 12px;
 }
 .analysis-item {
@@ -141,8 +142,9 @@ button.pork.active { background: var(--pork); border-color: var(--pork); }
   font-size: 0.9rem;
   font-weight: 600;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
+  line-height: 1.3;
 }
 .stat-row {
   display: flex;
@@ -163,13 +165,14 @@ button.pork.active { background: var(--pork); border-color: var(--pork); }
   border-radius: 4px;
   background: #f3f4f6;
   color: var(--muted);
+  margin-left: 4px;
 }
 .badge.hot { background: #fef2f2; color: var(--beef); }
 .badge.deal { background: #f0fdf4; color: var(--down); }
 
 .status { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
 footer { text-align: center; color: var(--muted); font-size: 0.78rem; margin-top: 8px; }
-footer a { color: var(--accent); text-decoration: none; }
+footer a { color: #2563eb; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -189,6 +192,12 @@ footer a { color: var(--accent); text-decoration: none; }
       <button data-days="90">90일</button>
       <button data-days="0" class="active">전체</button>
     </div>
+    <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">단위</span>
+    <div class="btn-group">
+      <button data-unit="day" class="active">일자별</button>
+      <button data-unit="month">월별</button>
+      <button data-unit="quarter">분기별</button>
+    </div>
     <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">종류</span>
     <div class="btn-group">
       <button data-type="all" class="active">전체</button>
@@ -201,8 +210,8 @@ footer a { color: var(--accent); text-decoration: none; }
     <div class="chart-header">
       <h2>가격 추이 (100g당)</h2>
       <div class="legend-inline">
-        <span><span class="dot beef"></span>소고기</span>
-        <span><span class="dot pork"></span>돼지고기</span>
+        <span><span class="dot beef"></span>소고기 (빨은색 계열)</span>
+        <span><span class="dot pork"></span>돼지고기 (푸른색 계열)</span>
       </div>
     </div>
     <div class="chart-wrap"><canvas id="chart"></canvas></div>
@@ -234,15 +243,25 @@ function formatDate(iso) {
 }
 
 function isPork(name) { return name.includes('삼겹살'); }
-function shortName(name) {
-  return name.replace(' (국내산) 100g','').replace('구이용','').trim();
-}
+function fullName(name) { return name; }
 
 let rawData = [];
 let chart = null;
 let selectedDays = 0;
 let selectedType = 'all';
-let visibleProducts = new Set();
+let selectedUnit = 'day';
+let selectedProduct = null; // null = all
+
+const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171','#fca5a5'];
+const PORK_COLORS = ['#1e3a8a','#1e40af','#1d4ed8','#2563eb','#3b82f6','#60a5fa','#93c5fd'];
+
+function getColor(product, allProducts) {
+  const pork = isPork(product);
+  const sameType = allProducts.filter(p => isPork(p) === pork);
+  const idx = sameType.indexOf(product);
+  const colors = pork ? PORK_COLORS : BEEF_COLORS;
+  return colors[idx % colors.length];
+}
 
 async function loadData() {
   const status = document.getElementById('status');
@@ -289,7 +308,6 @@ function getProductStats(product) {
   const pct7 = p7 ? Math.round((chg7 / p7) * 100) : null;
   const pct30 = p30 ? Math.round((chg30 / p30) * 100) : null;
   
-  // volatility: std dev
   const mean = prices.reduce((a,b) => a+b, 0) / prices.length;
   const variance = prices.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / prices.length;
   const std = Math.round(Math.sqrt(variance));
@@ -322,7 +340,7 @@ function buildSummary() {
       <div class="summary-card ${pork ? 'pork' : 'beef'}">
         <div class="thumb ${pork ? 'pork' : 'beef'}">${icon}</div>
         <div class="summary-info">
-          <div class="summary-name">${shortName(p)}</div>
+          <div class="summary-name">${fullName(p)}</div>
           <div class="summary-price">${s.latest.price.toLocaleString()}원</div>
           <div class="summary-meta">${formatDate(s.latest.date)} ${changeHtml}</div>
         </div>
@@ -336,7 +354,7 @@ function buildAnalysis() {
   const sorted = products.sort((a, b) => {
     const aPork = isPork(a), bPork = isPork(b);
     if (aPork !== bPork) return aPork ? 1 : -1;
-    return shortName(a).localeCompare(shortName(b));
+    return fullName(a).localeCompare(fullName(b));
   });
 
   container.innerHTML = sorted.map(p => {
@@ -346,7 +364,7 @@ function buildAnalysis() {
     const icon = pork ? '🐷' : '🐂';
     
     function fmtChg(v, pct) {
-      if (v == null) return '-';
+      if (v == null) return '<span class="stat-value">-</span>';
       const cls = v > 0 ? 'up' : v < 0 ? 'down' : '';
       const sign = v > 0 ? '+' : '';
       return `<span class="stat-value ${cls}">${sign}${v.toLocaleString()}원${pct != null ? ` (${sign}${pct}%)` : ''}</span>`;
@@ -360,7 +378,7 @@ function buildAnalysis() {
     
     return `
       <div class="analysis-item ${pork ? 'pork' : 'beef'}">
-        <h3>${icon} ${shortName(p)} ${badge}</h3>
+        <h3>${icon} ${fullName(p)} ${badge}</h3>
         <div class="stat-row"><span class="stat-label">현재가</span><span class="stat-value">${s.latest.price.toLocaleString()}원</span></div>
         <div class="stat-row"><span class="stat-label">7일 변동</span>${fmtChg(s.chg7, s.pct7)}</div>
         <div class="stat-row"><span class="stat-label">30일 변동</span>${fmtChg(s.chg30, s.pct30)}</div>
@@ -377,27 +395,51 @@ function buildFilters() {
   const products = [...new Set(rawData.map(d => d.product))].sort((a,b) => isPork(a) - isPork(b));
   const container = document.getElementById('filters');
   container.innerHTML = '';
-  visibleProducts = new Set(products);
+  
+  // All button
+  const allChip = document.createElement('label');
+  allChip.className = 'chip active';
+  allChip.style.fontWeight = '600';
+  allChip.innerHTML = `<span>전체</span>`;
+  allChip.addEventListener('click', () => {
+    selectedProduct = null;
+    updateChipStates();
+    renderChart();
+  });
+  container.appendChild(allChip);
+  
   products.forEach(p => {
     const pork = isPork(p);
     const chip = document.createElement('label');
-    chip.className = `chip ${pork ? 'pork' : 'beef'} active`;
+    chip.className = `chip ${pork ? 'pork' : 'beef'}`;
+    chip.dataset.product = p;
     const icon = pork ? '🐷' : '🐂';
-    chip.innerHTML = `<input type="checkbox" checked data-product="${p}"><span class="mini-thumb">${icon}</span><span>${shortName(p)}</span>`;
-    chip.querySelector('input').addEventListener('change', (e) => {
-      if (e.target.checked) visibleProducts.add(p);
-      else visibleProducts.delete(p);
-      chip.classList.toggle('active', e.target.checked);
+    chip.innerHTML = `<span class="mini-thumb">${icon}</span><span>${fullName(p)}</span>`;
+    chip.addEventListener('click', () => {
+      selectedProduct = p;
+      updateChipStates();
       renderChart();
     });
     container.appendChild(chip);
   });
 }
 
+function updateChipStates() {
+  document.querySelectorAll('.chip').forEach(chip => {
+    const isAll = !chip.dataset.product;
+    const isSelected = selectedProduct === null ? isAll : chip.dataset.product === selectedProduct;
+    chip.classList.toggle('active', isSelected);
+  });
+}
+
 function getFiltered() {
-  let data = rawData.filter(d => visibleProducts.has(d.product));
-  if (selectedType === 'beef') data = data.filter(d => !isPork(d.product));
-  if (selectedType === 'pork') data = data.filter(d => isPork(d.product));
+  let data = rawData;
+  if (selectedProduct) {
+    data = data.filter(d => d.product === selectedProduct);
+  } else {
+    if (selectedType === 'beef') data = data.filter(d => !isPork(d.product));
+    if (selectedType === 'pork') data = data.filter(d => isPork(d.product));
+  }
   if (selectedDays > 0) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - selectedDays);
@@ -407,31 +449,65 @@ function getFiltered() {
   return data;
 }
 
+function groupKey(date, unit) {
+  if (unit === 'day') return date;
+  if (unit === 'month') return date.slice(0, 7);
+  if (unit === 'quarter') {
+    const [y, m] = date.split('-');
+    const q = Math.ceil(parseInt(m, 10) / 3);
+    return `${y}-Q${q}`;
+  }
+  return date;
+}
+
+function formatGroupLabel(key, unit) {
+  if (unit === 'day') return formatDate(key);
+  if (unit === 'month') {
+    const [y, m] = key.split('-');
+    return `${y.slice(2)}.${m}`;
+  }
+  if (unit === 'quarter') {
+    return key.replace('-', ' ');
+  }
+  return key;
+}
+
 function renderChart() {
   const data = getFiltered();
+  const allProducts = [...new Set(rawData.map(d => d.product))];
   const products = [...new Set(data.map(d => d.product))];
-  const dates = [...new Set(data.map(d => d.date))].sort();
-  const labels = dates.map(formatDate);
-
-  const beefColors = ['#dc2626','#b91c1c','#ef4444','#f87171','#991b1b','#fca5a5'];
-  const porkColors = ['#db2777','#be185d','#ec4899','#f472b6','#9d174d','#f9a8d4'];
-
+  
+  const groups = [...new Set(data.map(d => groupKey(d.date, selectedUnit)))].sort();
+  const labels = groups.map(g => formatGroupLabel(g, selectedUnit));
+  
   const datasets = products.map(p => {
+    const color = getColor(p, allProducts);
     const pork = isPork(p);
-    const colors = pork ? porkColors : beefColors;
-    const idx = products.filter(x => isPork(x) === pork).indexOf(p);
-    const color = colors[idx % colors.length];
-    const map = new Map(data.filter(d => d.product === p).map(d => [d.date, d.price]));
+    const productData = data.filter(d => d.product === p);
+    
+    const groupMap = new Map();
+    productData.forEach(d => {
+      const g = groupKey(d.date, selectedUnit);
+      if (!groupMap.has(g)) groupMap.set(g, []);
+      groupMap.get(g).push(d.price);
+    });
+    
+    const values = groups.map(g => {
+      const prices = groupMap.get(g);
+      if (!prices || prices.length === 0) return null;
+      return Math.round(prices.reduce((a,b) => a+b, 0) / prices.length);
+    });
+    
     return {
-      label: shortName(p),
-      data: dates.map(d => map.has(d) ? map.get(d) : null),
+      label: fullName(p),
+      data: values,
       borderColor: color,
-      backgroundColor: color + '20',
+      backgroundColor: color + '22',
       tension: 0.25,
       spanGaps: true,
-      pointRadius: 2.5,
+      pointRadius: 3,
       borderWidth: 2,
-      borderDash: pork ? [4, 3] : []
+      borderDash: pork ? [5, 3] : []
     };
   });
 
@@ -445,7 +521,10 @@ function renderChart() {
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 11 }, color: '#374151' } },
+        legend: { 
+          position: 'bottom', 
+          labels: { boxWidth: 10, padding: 8, font: { size: 11 }, color: '#374151' } 
+        },
         tooltip: {
           callbacks: {
             label: (ctx) => ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
@@ -472,11 +551,21 @@ document.querySelectorAll('[data-days]').forEach(btn => {
     renderChart();
   });
 });
+document.querySelectorAll('[data-unit]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-unit]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedUnit = btn.dataset.unit;
+    renderChart();
+  });
+});
 document.querySelectorAll('[data-type]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedType = btn.dataset.type;
+    selectedProduct = null;
+    updateChipStates();
     renderChart();
   });
 });
