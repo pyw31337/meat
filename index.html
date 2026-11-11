@@ -32,6 +32,7 @@ header { display: flex; justify-content: space-between; align-items: flex-start;
 .header-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #0f172a; color: #fff; border-radius: 6px; font-size: 0.75rem; text-decoration: none; border: none; cursor: pointer; font-family: inherit; }
 .header-btn.secondary { background: #fff; color: #0f172a; border: 1px solid var(--border); }
 .subtitle { color: var(--muted); font-size: 0.8rem; }
+.alert-info { color: var(--muted); font-size: 0.7rem; margin-top: 4px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .btn-group { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 button { background: transparent; color: var(--muted); border: none; padding: 6px 12px; cursor: pointer; font-family: inherit; font-size: 0.78rem; }
@@ -111,6 +112,7 @@ footer a { color: var(--pork); text-decoration: none; }
     <div class="header-left">
       <h1>메가마트 가격</h1>
       <div class="subtitle">한우 등심 · 삼겹살 · 100g당</div>
+      <div class="alert-info">삼겹살 100g당 1,700원 이하 · 한우 100g당 7,000원 이하일 때 알림</div>
     </div>
     <div class="header-actions">
       <a class="header-btn" href="https://www.megamart.com/" target="_blank" rel="noopener">메가마트 가기</a>
