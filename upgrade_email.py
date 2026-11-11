@@ -1,0 +1,20 @@
+import pathlib
+p = pathlib.Path('megamart_checker.py')
+c = p.read_text(encoding='utf-8')
+old = """■ 실시간 인터랙티브 대시보드 바로가기 (기간/상품 다이내믹 필터링):
+- 로컬 파일: workspace의 'dashboard.html' 파일을 브라우저로 직접 열어주세요.
+- 깃허브 웹: https://github.com/pyw31337/beautiful-babbage/blob/main/dashboard.html"""
+new = """■ 실시간 가격 대시보드 (그래프 · 기간/상품 필터):
+https://pyw31337.github.io/meat/
+
+■ 쇼핑몰 바로가기:
+- 소고기 검색: {BEEF_SEARCH_URL}
+- 돼지고기 검색: {PORK_SEARCH_URL}"""
+if old in c:
+    c = c.replace(old, new)
+    print('alert patched')
+else:
+    print('alert pattern not found')
+c = c.replace('실제 구매 알림 메일은 발송되지 않았습니다.', '실제 구매 알림 메일은 발송되지 않았습니다.\n\n■ 실시간 가격 대시보드:\nhttps://pyw31337.github.io/meat/')
+p.write_text(c, encoding='utf-8')
+print('done', 'pyw31337.github.io/meat' in c)
