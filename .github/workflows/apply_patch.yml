@@ -1,0 +1,18 @@
+name: Apply Patch
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply
+        run: |
+          python3 patch_checker_ids.py
+          git config user.name "pyw31337"
+          git config user.email "pyw213@naver.com"
+          git add megamart_checker.py
+          git commit -m "feat: extract product IDs during price collection" || true
+          git push
