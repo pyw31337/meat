@@ -2,8 +2,20 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
 <title>메가마트 가격</title>
+<meta name="description" content="메가마트 한우 등심과 삼겹살 가격을 추적합니다. 100g당 가격 비교와 알림.">
+<meta property="og:title" content="메가마트 가격">
+<meta property="og:description" content="한우 · 삼겹살 가격 추적">
+<meta property="og:image" content="https://pyw31337.github.io/meat/og-meat.png">
+<meta property="og:url" content="https://pyw31337.github.io/meat/">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="favicon-192.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -12,10 +24,13 @@
   --beef: #dc2626; --pork: #2563eb; --up: #ef4444; --down: #22c55e; --ma7: #f59e0b; --ma30: #8b5cf6;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: 'Noto Sans KR', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.4; }
-.container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
-header { margin-bottom: 16px; }
-h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 2px; }
+body { margin: 0; font-family: 'Noto Sans KR', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.4; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+.container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.header-left h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 2px; }
+.header-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.header-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: #0f172a; color: #fff; border-radius: 6px; font-size: 0.75rem; text-decoration: none; border: none; cursor: pointer; font-family: inherit; }
+.header-btn.secondary { background: #fff; color: #0f172a; border: 1px solid var(--border); }
 .subtitle { color: var(--muted); font-size: 0.8rem; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .btn-group { display: flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -76,14 +91,32 @@ button.pork.active { background: var(--pork); }
 .buy-btn { display: block; margin-top: 10px; padding: 6px 0; background: #0f172a; color: #fff; text-align: center; border-radius: 6px; font-size: 0.75rem; text-decoration: none; }
 .product-card.beef .buy-btn { background: var(--beef); } .product-card.pork .buy-btn { background: var(--pork); }
 footer { text-align: center; color: var(--muted); font-size: 0.7rem; margin-top: 20px; }
+@media (max-width: 480px) {
+  .header-left h1 { font-size: 1.1rem; }
+  .header-btn { padding: 5px 8px; font-size: 0.7rem; }
+  .chart-wrap { height: 280px; }
+  .product-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 320px) {
+  .container { padding: 12px 8px 32px; }
+  .header-actions { width: 100%; }
+  .header-btn { flex: 1; justify-content: center; }
+}
 footer a { color: var(--pork); text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>메가마트 가격</h1>
-    <div class="subtitle">한우 등심 · 삼겹살 · 100g당</div>
+    <div class="header-left">
+      <h1>메가마트 가격</h1>
+      <div class="subtitle">한우 등심 · 삼겹살 · 100g당</div>
+    </div>
+    <div class="header-actions">
+      <a class="header-btn" href="https://www.megamart.com/" target="_blank" rel="noopener">메가마트 가기</a>
+      <button class="header-btn secondary" id="shareBtn">공유</button>
+      <button class="header-btn secondary" id="notifyBtn">알림설정</button>
+    </div>
   </header>
   <div class="controls">
     <div class="btn-group">
@@ -380,6 +413,31 @@ document.querySelectorAll('[data-days]').forEach(btn => { btn.onclick = () => { 
 document.querySelectorAll('[data-unit]').forEach(btn => { btn.onclick = () => { document.querySelectorAll('[data-unit]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedUnit = btn.dataset.unit; renderChart(); }; });
 document.querySelectorAll('[data-type]').forEach(btn => { btn.onclick = () => { document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedType = btn.dataset.type; focusedProduct = null; buildProducts(); renderChart(); }; });
 loadData();
+</script>
+<script>
+// Share
+document.getElementById('shareBtn').onclick = () => {
+  if (navigator.share) {
+    navigator.share({ title: '메가마트 가격', text: '한우 · 삼겹살 가격 추적', url: location.href });
+  } else {
+    navigator.clipboard.writeText(location.href);
+    alert('링크가 복사되었습니다');
+  }
+};
+// Notification permission
+document.getElementById('notifyBtn').onclick = async () => {
+  if (!('Notification' in window)) { alert('이 브라우저는 알림을 지원하지 않습니다'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    localStorage.setItem('meat-notify', 'on');
+    alert('알림이 설정되었습니다. 가격이 기준 이하로 떨어지면 알려드립니다.');
+    new Notification('메가마트 가격', { body: '알림이 설정되었습니다', icon: 'favicon-192.png' });
+  }
+};
+// PWA service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
