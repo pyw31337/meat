@@ -1,255 +1,372 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메가마트 한우 등심 & 삼겹살 가격 추이</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        :root {
-            --bg: #ffffff;
-            --card: #f8f9fa;
-            --text: #1a1a1a;
-            --muted: #666666;
-            --accent: #2563eb;
-            --border: #e5e7eb;
-            --beef: #dc2626;
-            --pork: #16a34a;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: 'Noto Sans KR', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-        }
-        .container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
-        header { text-align: center; margin-bottom: 28px; }
-        h1 { font-size: 1.75rem; margin: 0 0 6px; font-weight: 700; color: #111; }
-        .subtitle { color: var(--muted); font-size: 0.95rem; }
-        .controls {
-            display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
-        }
-        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        button {
-            background: #fff; color: var(--text); border: 1px solid var(--border);
-            padding: 6px 14px; border-radius: 8px; cursor: pointer; font-family: inherit;
-            font-size: 0.88rem; transition: all 0.15s;
-        }
-        button:hover { border-color: var(--accent); color: var(--accent); }
-        button.active {
-            background: var(--accent); color: #fff; border-color: var(--accent);
-        }
-        .chart-card {
-            background: #fff; border: 1px solid var(--border);
-            border-radius: 12px; padding: 20px; margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-        }
-        .chart-card h2 { margin: 0 0 14px; font-size: 1.1rem; font-weight: 600; }
-        .chart-wrap { position: relative; height: 420px; }
-        .product-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .chip {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: #f3f4f6; border: 1px solid var(--border);
-            padding: 4px 10px; border-radius: 20px; font-size: 0.84rem; cursor: pointer;
-        }
-        .chip input { display: none; }
-        .chip.active { border-color: var(--accent); background: #eff6ff; }
-        .status { font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
-        .legend-note { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
-        footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 16px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메가마트 한우 등심 & 삼겹살 가격 추이</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --beef: #dc2626;
+  --beef-soft: #fef2f2;
+  --pork: #db2777;
+  --pork-soft: #fdf2f8;
+  --accent: #2563eb;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+.container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
+header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+h1 { font-size: 1.6rem; margin: 0 0 4px; font-weight: 700; }
+.subtitle { color: var(--muted); font-size: 0.9rem; }
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.summary-card.beef { border-left: 4px solid var(--beef); }
+.summary-card.pork { border-left: 4px solid var(--pork); }
+.thumb {
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+.thumb.beef { background: var(--beef-soft); }
+.thumb.pork { background: var(--pork-soft); }
+.summary-info { flex: 1; min-width: 0; }
+.summary-name { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summary-price { font-size: 1.15rem; font-weight: 700; margin-top: 2px; }
+.summary-meta { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.change { font-size: 0.78rem; font-weight: 500; }
+.change.up { color: #dc2626; }
+.change.down { color: #16a34a; }
+.change.flat { color: var(--muted); }
+
+.controls {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;
+}
+.btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+button {
+  background: #fff; color: var(--text); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: inherit;
+  font-size: 0.85rem; transition: all 0.15s;
+}
+button:hover { border-color: var(--accent); }
+button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+button.beef.active { background: var(--beef); border-color: var(--beef); }
+button.pork.active { background: var(--pork); border-color: var(--pork); }
+
+.chart-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; margin-bottom: 16px;
+}
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.chart-header h2 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+.legend-inline { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); }
+.legend-inline span { display: flex; align-items: center; gap: 4px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.beef { background: var(--beef); }
+.dot.pork { background: var(--pork); }
+.chart-wrap { position: relative; height: 380px; }
+
+.product-filters {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
+  padding-top: 12px; border-top: 1px solid var(--border);
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #f9fafb; border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.chip.beef.active { border-color: var(--beef); background: var(--beef-soft); color: var(--beef); }
+.chip.pork.active { border-color: var(--pork); background: var(--pork-soft); color: var(--pork); }
+.chip input { display: none; }
+.chip .mini-thumb {
+  width: 16px; height: 16px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+}
+.chip.beef .mini-thumb { background: var(--beef-soft); }
+.chip.pork .mini-thumb { background: var(--pork-soft); }
+
+.status { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+footer { text-align: center; color: var(--muted); font-size: 0.78rem; margin-top: 8px; }
+footer a { color: var(--accent); text-decoration: none; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🥩 메가마트 한우 등심 & 삼겹살 가격 추이</h1>
-            <div class="subtitle">동적 차트 · 실시간 가격 데이터</div>
-        </header>
+<div class="container">
+  <header>
+    <h1>🥩 메가마트 한우 등심 & 삼겹살 가격 추이</h1>
+    <div class="subtitle">실시간 가격 모니터링 · 100g당 단가 기준</div>
+  </header>
 
-        <div class="controls">
-            <span style="color:var(--muted);">기간:</span>
-            <div class="btn-group">
-                <button data-days="7">7일</button>
-                <button data-days="30">30일</button>
-                <button data-days="90">90일</button>
-                <button data-days="0" class="active">전체</button>
-            </div>
-            <span style="color:var(--muted); margin-left:12px;">종류:</span>
-            <div class="btn-group">
-                <button data-type="all" class="active">전체</button>
-                <button data-type="beef">소고기</button>
-                <button data-type="pork">돼지고기</button>
-            </div>
-        </div>
+  <div class="summary" id="summary"></div>
 
-        <div class="chart-card">
-            <h2>가격 추이 (100g당 원)</h2>
-            <div class="chart-wrap"><canvas id="chart"></canvas></div>
-            <div class="product-filters" id="filters"></div>
-            <div class="status" id="status">데이터 로딩 중...</div>
-            <div class="legend-note">호버하면 상세 가격이 나옵니다. 상품 칩을 끄면 해당 곡선이 숨겨집니다.</div>
-        </div>
-
-        <footer>메가마트 가격 모니터링 · <a href="https://github.com/pyw31337/meat" style="color:var(--accent);">GitHub</a></footer>
+  <div class="controls">
+    <span style="color:var(--muted); font-size:0.85rem;">기간</span>
+    <div class="btn-group">
+      <button data-days="7">7일</button>
+      <button data-days="30">30일</button>
+      <button data-days="90">90일</button>
+      <button data-days="0" class="active">전체</button>
     </div>
+    <span style="color:var(--muted); font-size:0.85rem; margin-left:8px;">종류</span>
+    <div class="btn-group">
+      <button data-type="all" class="active">전체</button>
+      <button data-type="beef" class="beef">소고기</button>
+      <button data-type="pork" class="pork">돼지고기</button>
+    </div>
+  </div>
 
-    <script>
-        const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
-        const WEEKDAYS = ['일','월','화','수','목','금','토'];
+  <div class="chart-card">
+    <div class="chart-header">
+      <h2>가격 추이 (100g당)</h2>
+      <div class="legend-inline">
+        <span><span class="dot beef"></span>소고기</span>
+        <span><span class="dot pork"></span>돼지고기</span>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div class="product-filters" id="filters"></div>
+    <div class="status" id="status">데이터 로딩 중...</div>
+  </div>
 
-        function formatDate(iso) {
-            const d = new Date(iso + 'T00:00:00');
-            if (isNaN(d)) return iso;
-            const yy = String(d.getFullYear()).slice(2);
-            const mm = String(d.getMonth()+1).padStart(2,'0');
-            const dd = String(d.getDate()).padStart(2,'0');
-            const wd = WEEKDAYS[d.getDay()];
-            return `${yy}.${mm}.${dd}(${wd})`;
+  <footer>메가마트 가격 모니터링 · <a href="https://github.com/pyw31337/meat">GitHub</a></footer>
+</div>
+
+<script>
+const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
+const WEEKDAYS = ['일','월','화','수','목','금','토'];
+
+function formatDate(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yy}.${mm}.${dd}(${WEEKDAYS[d.getDay()]})`;
+}
+
+function isPork(name) { return name.includes('삼겹살'); }
+function shortName(name) {
+  return name.replace(' (국내산) 100g','').replace('구이용','').replace('1kg','1kg').trim();
+}
+
+let rawData = [];
+let chart = null;
+let selectedDays = 0;
+let selectedType = 'all';
+let visibleProducts = new Set();
+
+async function loadData() {
+  const status = document.getElementById('status');
+  try {
+    const res = await fetch(CSV_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('CSV 로드 실패');
+    const text = await res.text();
+    const lines = text.trim().split(/\r?\n/);
+    rawData = lines.slice(1).map(line => {
+      const parts = line.split(',');
+      return { date: parts[0], product: parts[1], price: parseInt(parts[2], 10) };
+    }).filter(d => d.date && !isNaN(d.price));
+    status.textContent = `${rawData.length}건 로드 · ${formatDate(rawData[0]?.date)} ~ ${formatDate(rawData[rawData.length-1]?.date)}`;
+    buildSummary();
+    buildFilters();
+    renderChart();
+  } catch (e) {
+    status.textContent = '데이터 로드 실패: ' + e.message;
+  }
+}
+
+function buildSummary() {
+  const container = document.getElementById('summary');
+  const products = [...new Set(rawData.map(d => d.product))];
+  const latest = {};
+  const prev = {};
+  rawData.forEach(d => {
+    if (!latest[d.product] || d.date > latest[d.product].date) latest[d.product] = d;
+  });
+  products.forEach(p => {
+    const dates = rawData.filter(d => d.product === p).map(d => d.date).sort();
+    if (dates.length >= 2) {
+      const prevDate = dates[dates.length - 2];
+      prev[p] = rawData.find(d => d.product === p && d.date === prevDate);
+    }
+  });
+
+  // Sort: beef first, then by price desc
+  const sorted = products.sort((a, b) => {
+    const aPork = isPork(a), bPork = isPork(b);
+    if (aPork !== bPork) return aPork ? 1 : -1;
+    return (latest[b]?.price || 0) - (latest[a]?.price || 0);
+  });
+
+  container.innerHTML = sorted.map(p => {
+    const pork = isPork(p);
+    const l = latest[p];
+    const pr = prev[p];
+    let changeHtml = '';
+    if (pr && l) {
+      const diff = l.price - pr.price;
+      if (diff > 0) changeHtml = `<span class="change up">+${diff.toLocaleString()}</span>`;
+      else if (diff < 0) changeHtml = `<span class="change down">${diff.toLocaleString()}</span>`;
+      else changeHtml = `<span class="change flat">동일</span>`;
+    }
+    const icon = pork ? '🐷' : '🐂';
+    return `
+      <div class="summary-card ${pork ? 'pork' : 'beef'}">
+        <div class="thumb ${pork ? 'pork' : 'beef'}">${icon}</div>
+        <div class="summary-info">
+          <div class="summary-name">${shortName(p)}</div>
+          <div class="summary-price">${l ? l.price.toLocaleString() + '원' : '-'}</div>
+          <div class="summary-meta">${l ? formatDate(l.date) : ''} ${changeHtml}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function buildFilters() {
+  const products = [...new Set(rawData.map(d => d.product))].sort((a,b) => isPork(a) - isPork(b));
+  const container = document.getElementById('filters');
+  container.innerHTML = '';
+  visibleProducts = new Set(products);
+  products.forEach(p => {
+    const pork = isPork(p);
+    const chip = document.createElement('label');
+    chip.className = `chip ${pork ? 'pork' : 'beef'} active`;
+    const icon = pork ? '🐷' : '🐂';
+    chip.innerHTML = `<input type="checkbox" checked data-product="${p}"><span class="mini-thumb">${icon}</span><span>${shortName(p)}</span>`;
+    chip.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) visibleProducts.add(p);
+      else visibleProducts.delete(p);
+      chip.classList.toggle('active', e.target.checked);
+      renderChart();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function getFiltered() {
+  let data = rawData.filter(d => visibleProducts.has(d.product));
+  if (selectedType === 'beef') data = data.filter(d => !isPork(d.product));
+  if (selectedType === 'pork') data = data.filter(d => isPork(d.product));
+  if (selectedDays > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - selectedDays);
+    const cutStr = cutoff.toISOString().slice(0,10);
+    data = data.filter(d => d.date >= cutStr);
+  }
+  return data;
+}
+
+function renderChart() {
+  const data = getFiltered();
+  const products = [...new Set(data.map(d => d.product))];
+  const dates = [...new Set(data.map(d => d.date))].sort();
+  const labels = dates.map(formatDate);
+
+  const beefColors = ['#dc2626','#b91c1c','#ef4444','#f87171','#991b1b','#fca5a5'];
+  const porkColors = ['#db2777','#be185d','#ec4899','#f472b6','#9d174d','#f9a8d4'];
+
+  const datasets = products.map(p => {
+    const pork = isPork(p);
+    const colors = pork ? porkColors : beefColors;
+    const idx = products.filter(x => isPork(x) === pork).indexOf(p);
+    const color = colors[idx % colors.length];
+    const map = new Map(data.filter(d => d.product === p).map(d => [d.date, d.price]));
+    return {
+      label: shortName(p),
+      data: dates.map(d => map.has(d) ? map.get(d) : null),
+      borderColor: color,
+      backgroundColor: color + '20',
+      tension: 0.25,
+      spanGaps: true,
+      pointRadius: 2.5,
+      borderWidth: 2,
+      borderDash: pork ? [4, 3] : []
+    };
+  });
+
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('chart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 11 }, color: '#374151' } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
+          }
         }
-
-        let rawData = [];
-        let chart = null;
-        let selectedDays = 0;
-        let selectedType = 'all';
-        let visibleProducts = new Set();
-
-        async function loadData() {
-            const status = document.getElementById('status');
-            try {
-                const res = await fetch(CSV_URL + '?t=' + Date.now());
-                if (!res.ok) throw new Error('CSV 로드 실패');
-                const text = await res.text();
-                const lines = text.trim().split(/\r?\n/);
-                rawData = lines.slice(1).map(line => {
-                    const parts = line.split(',');
-                    return {
-                        date: parts[0],
-                        product: parts[1],
-                        price: parseInt(parts[2], 10)
-                    };
-                }).filter(d => d.date && !isNaN(d.price));
-                status.textContent = `로드 완료: ${rawData.length}건 · 기간 ${formatDate(rawData[0]?.date)} ~ ${formatDate(rawData[rawData.length-1]?.date)}`;
-                buildFilters();
-                renderChart();
-            } catch (e) {
-                status.textContent = '데이터 로드 실패: ' + e.message;
-                console.error(e);
-            }
+      },
+      scales: {
+        x: { ticks: { color: '#6b7280', maxRotation: 40, font: { size: 10 } }, grid: { color: '#f3f4f6' } },
+        y: {
+          ticks: { color: '#6b7280', callback: v => v.toLocaleString() },
+          grid: { color: '#f3f4f6' },
+          title: { display: true, text: '원 / 100g', color: '#6b7280', font: { size: 11 } }
         }
+      }
+    }
+  });
+}
 
-        function buildFilters() {
-            const products = [...new Set(rawData.map(d => d.product))].sort();
-            const container = document.getElementById('filters');
-            container.innerHTML = '';
-            visibleProducts = new Set(products);
-            products.forEach(p => {
-                const chip = document.createElement('label');
-                chip.className = 'chip active';
-                const short = p.replace(' (국내산) 100g','').replace('구이용','');
-                chip.innerHTML = `<input type="checkbox" checked data-product="${p}"><span>${short}</span>`;
-                chip.querySelector('input').addEventListener('change', (e) => {
-                    if (e.target.checked) visibleProducts.add(p);
-                    else visibleProducts.delete(p);
-                    chip.classList.toggle('active', e.target.checked);
-                    renderChart();
-                });
-                container.appendChild(chip);
-            });
-        }
+document.querySelectorAll('[data-days]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedDays = parseInt(btn.dataset.days, 10);
+    renderChart();
+  });
+});
+document.querySelectorAll('[data-type]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = btn.dataset.type;
+    renderChart();
+  });
+});
 
-        function getFiltered() {
-            let data = rawData.filter(d => visibleProducts.has(d.product));
-            if (selectedType === 'beef') data = data.filter(d => !d.product.includes('삼겹살'));
-            if (selectedType === 'pork') data = data.filter(d => d.product.includes('삼겹살'));
-            if (selectedDays > 0) {
-                const cutoff = new Date();
-                cutoff.setDate(cutoff.getDate() - selectedDays);
-                const cutStr = cutoff.toISOString().slice(0,10);
-                data = data.filter(d => d.date >= cutStr);
-            }
-            return data;
-        }
-
-        function renderChart() {
-            const data = getFiltered();
-            const products = [...new Set(data.map(d => d.product))];
-            const dates = [...new Set(data.map(d => d.date))].sort();
-            const labels = dates.map(formatDate);
-
-            const colors = [
-                '#2563eb','#dc2626','#16a34a','#d97706','#7c3aed',
-                '#0891b2','#db2777','#65a30d','#ea580c','#4f46e5'
-            ];
-
-            const datasets = products.map((p, i) => {
-                const map = new Map(data.filter(d => d.product === p).map(d => [d.date, d.price]));
-                return {
-                    label: p.replace(' (국내산) 100g','').replace('구이용',''),
-                    data: dates.map(d => map.has(d) ? map.get(d) : null),
-                    borderColor: colors[i % colors.length],
-                    backgroundColor: colors[i % colors.length] + '18',
-                    tension: 0.25,
-                    spanGaps: true,
-                    pointRadius: 3,
-                    borderWidth: 2
-                };
-            });
-
-            if (chart) chart.destroy();
-            const ctx = document.getElementById('chart').getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, color: '#1a1a1a' } },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-')
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: '#666', maxRotation: 45, font: { size: 11 } },
-                            grid: { color: '#f0f0f0' }
-                        },
-                        y: {
-                            ticks: { color: '#666', callback: v => v.toLocaleString() },
-                            grid: { color: '#f0f0f0' },
-                            title: { display: true, text: '원 / 100g', color: '#666' }
-                        }
-                    }
-                }
-            });
-        }
-
-        document.querySelectorAll('[data-days]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedDays = parseInt(btn.dataset.days, 10);
-                renderChart();
-            });
-        });
-        document.querySelectorAll('[data-type]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedType = btn.dataset.type;
-                renderChart();
-            });
-        });
-
-        loadData();
-    </script>
+loadData();
+</script>
 </body>
 </html>
