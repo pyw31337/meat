@@ -8,26 +8,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #f8fafc;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --beef: #dc2626;
-  --pork: #2563eb;
-  --up: #ef4444;
-  --down: #22c55e;
-  --ma7: #f59e0b;
-  --ma30: #8b5cf6;
+  --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+  --beef: #dc2626; --pork: #2563eb; --up: #ef4444; --down: #22c55e; --ma7: #f59e0b; --ma30: #8b5cf6;
 }
 * { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: 'Noto Sans KR', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.4;
-}
+body { margin: 0; font-family: 'Noto Sans KR', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.4; }
 .container { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
 header { margin-bottom: 16px; }
 h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.02em; }
@@ -45,10 +30,7 @@ button.pork.active { background: var(--pork); }
 .legend { display: flex; gap: 12px; font-size: 0.72rem; color: var(--muted); }
 .legend span { display: flex; align-items: center; gap: 4px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; }
-.dot.beef { background: var(--beef); }
-.dot.pork { background: var(--pork); }
-.dot.ma7 { background: var(--ma7); }
-.dot.ma30 { background: var(--ma30); }
+.dot.beef { background: var(--beef); } .dot.pork { background: var(--pork); } .dot.ma7 { background: var(--ma7); } .dot.ma30 { background: var(--ma30); }
 .chart-wrap { position: relative; height: 460px; }
 .status { font-size: 0.7rem; color: var(--muted); margin-top: 8px; }
 .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
@@ -62,17 +44,13 @@ button.pork.active { background: var(--pork); }
 .pc-name { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
 .pc-price { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
-.pc-change.up { color: var(--up); }
-.pc-change.down { color: var(--down); }
+.pc-change.up { color: var(--up); } .pc-change.down { color: var(--down); }
 .pc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 0.7rem; }
-.pc-metric-label { color: var(--muted); }
-.pc-metric-value { font-weight: 600; }
+.pc-metric-label { color: var(--muted); } .pc-metric-value { font-weight: 600; }
 .buy-btn { display: block; margin-top: 10px; padding: 6px 0; background: #0f172a; color: #fff; text-align: center; border-radius: 6px; font-size: 0.75rem; font-weight: 500; text-decoration: none; transition: background 0.15s; }
 .buy-btn:hover { background: #334155; }
-.product-card.beef .buy-btn { background: var(--beef); }
-.product-card.pork .buy-btn { background: var(--pork); }
-.product-card.beef .buy-btn:hover { background: #b91c1c; }
-.product-card.pork .buy-btn:hover { background: #1d4ed8; }
+.product-card.beef .buy-btn { background: var(--beef); } .product-card.pork .buy-btn { background: var(--pork); }
+.product-card.beef .buy-btn:hover { background: #b91c1c; } .product-card.pork .buy-btn:hover { background: #1d4ed8; }
 footer { text-align: center; color: var(--muted); font-size: 0.7rem; margin-top: 20px; }
 footer a { color: var(--pork); text-decoration: none; }
 </style>
@@ -85,20 +63,13 @@ footer a { color: var(--pork); text-decoration: none; }
   </header>
   <div class="controls">
     <div class="btn-group">
-      <button data-days="7">7일</button>
-      <button data-days="30">30일</button>
-      <button data-days="90">90일</button>
-      <button data-days="0" class="active">전체</button>
+      <button data-days="7">7일</button><button data-days="30">30일</button><button data-days="90">90일</button><button data-days="0" class="active">전체</button>
     </div>
     <div class="btn-group">
-      <button data-unit="day" class="active">일</button>
-      <button data-unit="month">월</button>
-      <button data-unit="quarter">분기</button>
+      <button data-unit="day" class="active">일</button><button data-unit="month">월</button><button data-unit="quarter">분기</button>
     </div>
     <div class="btn-group">
-      <button data-type="all" class="active">전체</button>
-      <button data-type="beef" class="beef">소</button>
-      <button data-type="pork" class="pork">돼지</button>
+      <button data-type="all" class="active">전체</button><button data-type="beef" class="beef">소</button><button data-type="pork" class="pork">돼지</button>
     </div>
   </div>
   <div class="chart-card">
@@ -119,6 +90,7 @@ footer a { color: var(--pork); text-decoration: none; }
 </div>
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/prices.csv';
+const IDS_URL = 'https://raw.githubusercontent.com/pyw31337/meat/main/history/product_ids.json';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
 const BEEF_SEARCH = 'https://www.megamart.com/search/?text=' + encodeURIComponent('한우 등심');
 const PORK_SEARCH = 'https://www.megamart.com/search/?text=' + encodeURIComponent('삼겹살 국내산');
@@ -134,7 +106,7 @@ function isPork(name) { return name.includes('삼겹살'); }
 function shortName(name) {
   return name.replace(' (국내산) 100g','').replace('구이용','').replace('한우 등심 ','').replace('돼지 ','').trim();
 }
-let rawData = [], chart = null;
+let rawData = [], chart = null, productIds = {};
 let selectedDays = 0, selectedType = 'all', selectedUnit = 'day';
 let focusedProduct = null;
 const BEEF_COLORS = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171'];
@@ -159,6 +131,8 @@ function calcMA(values, period) {
 async function loadData() {
   const status = document.getElementById('status');
   try {
+    const idsRes = await fetch(IDS_URL + '?t=' + Date.now());
+    if (idsRes.ok) productIds = await idsRes.json();
     const res = await fetch(CSV_URL + '?t=' + Date.now());
     const text = await res.text();
     const lines = text.trim().split(/\r?\n/);
@@ -202,7 +176,8 @@ function buildProducts() {
       chg = '<div class="pc-change ' + cls + '">' + sign + s.chg7.toLocaleString() + (s.pct7 ? ' (' + sign + s.pct7 + '%)' : '') + '</div>';
     }
     const active = focusedProduct === p ? ' active' : '';
-    const buyUrl = pork ? PORK_SEARCH : BEEF_SEARCH;
+    const pid = productIds[p];
+    const buyUrl = pid ? 'https://www.megamart.com/product/' + pid : (pork ? PORK_SEARCH : BEEF_SEARCH);
     return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
@@ -272,12 +247,10 @@ function renderChart() {
       return arr ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : null;
     });
     datasets.push({
-      label: shortName(p),
-      data: values,
+      label: shortName(p), data: values,
       borderColor: isDimmed ? '#d1d5db' : color,
       backgroundColor: isDimmed ? 'transparent' : color + '15',
-      tension: 0.3,
-      spanGaps: true,
+      tension: 0.3, spanGaps: true,
       pointRadius: isFocused ? 3 : (isDimmed ? 0 : 2),
       pointHoverRadius: 5,
       borderWidth: isFocused ? 3 : (isDimmed ? 1 : 2),
@@ -287,44 +260,19 @@ function renderChart() {
     if (isFocused && selectedUnit === 'day') {
       const ma7 = calcMA(values, 7);
       const ma30 = calcMA(values, 30);
-      datasets.push({
-        label: shortName(p) + ' MA7',
-        data: ma7,
-        borderColor: '#f59e0b',
-        borderWidth: 1.5,
-        borderDash: [2, 2],
-        pointRadius: 0,
-        tension: 0.3,
-        spanGaps: true,
-        order: 0
-      });
-      datasets.push({
-        label: shortName(p) + ' MA30',
-        data: ma30,
-        borderColor: '#8b5cf6',
-        borderWidth: 1.5,
-        borderDash: [4, 4],
-        pointRadius: 0,
-        tension: 0.3,
-        spanGaps: true,
-        order: 0
-      });
+      datasets.push({ label: shortName(p) + ' MA7', data: ma7, borderColor: '#f59e0b', borderWidth: 1.5, borderDash: [2, 2], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
+      datasets.push({ label: shortName(p) + ' MA30', data: ma30, borderColor: '#8b5cf6', borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, tension: 0.3, spanGaps: true, order: 0 });
     }
   });
   if (chart) chart.destroy();
   chart = new Chart(document.getElementById('chart'), {
-    type: 'line',
-    data: { labels, datasets },
+    type: 'line', data: { labels, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15,23,42,0.95)',
-          padding: 8, cornerRadius: 6,
-          callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y ? c.parsed.y.toLocaleString() + '원' : '-') }
-        }
+        tooltip: { backgroundColor: 'rgba(15,23,42,0.95)', padding: 8, cornerRadius: 6, callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y ? c.parsed.y.toLocaleString() + '원' : '-') } }
       },
       scales: {
         x: { ticks: { color: '#94a3b8', maxRotation: 0, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
@@ -333,32 +281,9 @@ function renderChart() {
     }
   });
 }
-document.querySelectorAll('[data-days]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedDays = parseInt(btn.dataset.days);
-    renderChart();
-  };
-});
-document.querySelectorAll('[data-unit]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('[data-unit]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedUnit = btn.dataset.unit;
-    renderChart();
-  };
-});
-document.querySelectorAll('[data-type]').forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedType = btn.dataset.type;
-    focusedProduct = null;
-    buildProducts();
-    renderChart();
-  };
-});
+document.querySelectorAll('[data-days]').forEach(btn => { btn.onclick = () => { document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedDays = parseInt(btn.dataset.days); renderChart(); }; });
+document.querySelectorAll('[data-unit]').forEach(btn => { btn.onclick = () => { document.querySelectorAll('[data-unit]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedUnit = btn.dataset.unit; renderChart(); }; });
+document.querySelectorAll('[data-type]').forEach(btn => { btn.onclick = () => { document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active')); btn.classList.add('active'); selectedType = btn.dataset.type; focusedProduct = null; buildProducts(); renderChart(); }; });
 loadData();
 </script>
 </body>
