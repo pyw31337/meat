@@ -40,6 +40,22 @@ button.pork.active { background: var(--pork); }
 .product-card.pork { border-top: 3px solid var(--pork); }
 .product-card.beef.active { box-shadow: 0 0 0 2px var(--beef); }
 .product-card.pork.active { box-shadow: 0 0 0 2px var(--pork); }
+.product-card.cheaper {
+  animation: shake-pause 2.4s ease-in-out infinite;
+}
+@keyframes shake-pause {
+  0%, 10% { transform: translateX(0); }
+  2% { transform: translateX(-3px); }
+  4% { transform: translateX(3px); }
+  6% { transform: translateX(-2px); }
+  8% { transform: translateX(2px); }
+  10%, 50% { transform: translateX(0); }
+  52% { transform: translateX(-3px); }
+  54% { transform: translateX(3px); }
+  56% { transform: translateX(-2px); }
+  58% { transform: translateX(2px); }
+  60%, 100% { transform: translateX(0); }
+}
 .pc-name { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
 .pc-price { font-size: 1.3rem; font-weight: 700; }
 .pc-change { font-size: 0.72rem; font-weight: 500; margin-top: 2px; }
@@ -162,7 +178,10 @@ function getStats(product) {
   const p7 = past.length ? past[past.length - 1].price : null;
   const chg7 = p7 != null ? latest.price - p7 : null;
   const pct7 = p7 ? Math.round((chg7 / p7) * 100) : null;
-  return { latest, min, max, avg, chg7, pct7, count: items.length };
+  // Day-over-day change
+  const yesterday = items.length >= 2 ? items[items.length - 2] : null;
+  const chg1 = yesterday ? latest.price - yesterday.price : null;
+  return { latest, min, max, avg, chg7, pct7, chg1, count: items.length };
 }
 function buildProducts() {
   const products = [...new Set(rawData.map(d => d.product))];
@@ -180,9 +199,10 @@ function buildProducts() {
       chg = '<div class="pc-change ' + cls + '">' + sign + s.chg7.toLocaleString() + (s.pct7 ? ' (' + sign + s.pct7 + '%)' : '') + '</div>';
     }
     const active = focusedProduct === p ? ' active' : '';
+    const cheaper = s.chg1 != null && s.chg1 < 0 ? ' cheaper' : '';
     const pid = productIds[p];
     const buyUrl = pid ? 'https://www.megamart.com/product/' + pid : (pork ? PORK_SEARCH : BEEF_SEARCH);
-    return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + '" data-product="' + p + '">' +
+    return '<div class="product-card ' + (pork ? 'pork' : 'beef') + active + cheaper + '" data-product="' + p + '">' +
       '<div class="pc-name">' + shortName(p) + '</div>' +
       '<div class="pc-price">' + s.latest.price.toLocaleString() + '</div>' + chg +
       '<div class="sparkline" data-product="' + p + '"></div>' +
