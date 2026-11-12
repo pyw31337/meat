@@ -74,10 +74,11 @@ test('repository history is SKU-aware and has no duplicate daily observation', (
 
 test('repository data keeps historical product families continuous across current SKUs', () => {
   const csv = fs.readFileSync(new URL('../history/prices.csv', import.meta.url), 'utf8');
-  const products = getProductSeries(parseObservations(csv));
+  const observations = parseObservations(csv);
+  const products = getProductSeries(observations);
   const coreProducts = products.filter((product) => product.isCore);
   const porkValley = products.find((product) => product.productId === 'pork-porkvalley-100g');
   assert.equal(coreProducts.length, 10);
   assert.equal(products.filter((product) => product.name === '포크밸리 삼겹살 (100g)').length, 1);
-  assert.equal(porkValley.observations.at(-1).date, '2026-11-12');
+  assert.equal(porkValley.observations.at(-1).date, observations.at(-1).date);
 });
