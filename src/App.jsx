@@ -29,6 +29,7 @@ const UNIT_OPTIONS = [
 const number = new Intl.NumberFormat('ko-KR');
 const BEEF_SERIES_COLORS = ['#c53f31', '#da6554', '#9b5545', '#e28a73'];
 const PORK_SERIES_COLORS = ['#1f6fae', '#3689c7', '#639fd0', '#4d759d', '#78add6', '#315d88'];
+const BEEF_CARD_ORDER = ['beef-grade-1pp', 'beef-grade-1p', 'beef-grade-1', 'beef-grade-1-1kg'];
 
 function seriesColor(product, products) {
   const family = products.filter((item) => item.category === product.category);
@@ -80,6 +81,7 @@ function Sparkline({ product }) {
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
   const latestIndex = values.findLastIndex(Number.isFinite);
   const latestPoint = segments.flat().find((point) => point[3] === latestIndex);
+  const singleRecord = records.length === 1;
 
   return (
     <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 ${records.length}회 수집 가격 그래프`}>
@@ -95,13 +97,12 @@ function Sparkline({ product }) {
           const x = 7 + (index / Math.max(dates.length - 1, 1)) * 226;
           return <line key={date} className="spark-guide" x1={x} x2={x} y1="57" y2="63" />;
         })}
-        {segments.map((segment, index) => (
+        {singleRecord ? <><line x1="7" x2="233" y1="34" y2="34" className="spark-single-line" stroke={color} /><circle cx="120" cy="34" r="4" fill={color} className="spark-dot" /></> : <>{segments.map((segment, index) => (
           <path key={index} className="spark-path" d={pathFor(segment)} stroke={color} />
-        ))}
-        {latestPoint && <circle cx={latestPoint[0]} cy={latestPoint[1]} r="3.8" fill={color} className="spark-dot" />}
+        ))}{latestPoint && <circle cx={latestPoint[0]} cy={latestPoint[1]} r="3.8" fill={color} className="spark-dot" />}</>}
       </svg>
-      <div className="spark-dates" aria-hidden="true">
-        {dates.map((date, index) => {
+      <div className={`spark-dates ${singleRecord ? 'is-single' : ''}`} aria-hidden="true">
+        {singleRecord ? <span>{`${Number(dates[0].slice(5, 7))}.${Number(dates[0].slice(8, 10))} 첫 기록`}</span> : dates.map((date, index) => {
           const previous = dates[index - 1];
           const newMonth = !previous || previous.slice(5, 7) !== date.slice(5, 7);
           return <span key={date}>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</span>;
@@ -111,40 +112,42 @@ function Sparkline({ product }) {
   );
 }
 
-function ProductCard({ product, dataEndDate, isActive, onSelect }) {
+function ProductCard({ product, dataEndDate, isActive = false, onSelect, isSupplementary = false }) {
   const stats = productStats(product, dataEndDate);
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
   const priceUrl = stats.latest.sourceProductId ? `https://www.megamart.com/product/${stats.latest.sourceProductId}` : null;
   const records = recentRecords(product);
   const changeLabel = stats.change === null
-    ? '7회 비교 데이터 없음'
+    ? isSupplementary ? '추세 데이터 수집 중' : '7회 비교 데이터 없음'
     : `${stats.change > 0 ? '+' : ''}${number.format(stats.change)}원 · ${stats.changePercent > 0 ? '+' : ''}${stats.changePercent}%`;
+
+  const cardContents = <>
+    <div className="product-topline">
+      <span className="product-type">{isSupplementary ? `NEW ${product.category === 'pork' ? 'PORK' : 'BEEF'}` : product.category === 'pork' ? 'PORK' : 'BEEF'}</span>
+      {stats.staleDays > 0 && <span className="stale-badge">{stats.staleDays}일 전</span>}
+    </div>
+    <h3 title={product.name}>{shortName(product.name)}</h3>
+    <div className="product-price"><strong>{number.format(stats.latest.price)}</strong><span>원 / 100g</span></div>
+    <p className={`product-change ${stats.change > 0 ? 'up' : stats.change < 0 ? 'down' : ''}`}>{changeLabel}</p>
+    <Sparkline product={product} />
+    <div className="record-meta"><span>{records.length === 1 ? '첫 수집 기록' : `최근 ${records.length}회 수집 기록`}</span><span>마지막 {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span></div>
+    <dl className="product-stats">
+      <div><dt>최저</dt><dd>{number.format(stats.minimum)}원</dd></div>
+      <div><dt>최고</dt><dd>{number.format(stats.maximum)}원</dd></div>
+      <div><dt>평균</dt><dd>{number.format(stats.average)}원</dd></div>
+      <div><dt>기록</dt><dd>{product.observations.length}회</dd></div>
+    </dl>
+  </>;
 
   return (
     <article className={`product-card ${isActive ? 'is-active' : ''} ${stats.staleDays ? 'is-stale' : ''}`} style={{ '--product-color': color }}>
-      <button
+      {onSelect ? <button
         type="button"
         className="product-focus"
         aria-pressed={isActive}
         aria-label={`${shortName(product.name)} ${isActive ? '선택 해제' : '그래프에 선택'}`}
         onClick={onSelect}
-      >
-        <div className="product-topline">
-          <span className="product-type">{product.category === 'pork' ? 'PORK' : 'BEEF'}</span>
-          {stats.staleDays > 0 && <span className="stale-badge">{stats.staleDays}일 전</span>}
-        </div>
-        <h3 title={product.name}>{shortName(product.name)}</h3>
-        <div className="product-price"><strong>{number.format(stats.latest.price)}</strong><span>원 / 100g</span></div>
-        <p className={`product-change ${stats.change > 0 ? 'up' : stats.change < 0 ? 'down' : ''}`}>{changeLabel}</p>
-        <Sparkline product={product} />
-        <div className="record-meta"><span>최근 {records.length}회 수집 기록</span><span>마지막 {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span></div>
-        <dl className="product-stats">
-          <div><dt>최저</dt><dd>{number.format(stats.minimum)}원</dd></div>
-          <div><dt>최고</dt><dd>{number.format(stats.maximum)}원</dd></div>
-          <div><dt>평균</dt><dd>{number.format(stats.average)}원</dd></div>
-          <div><dt>기록</dt><dd>{product.observations.length}회</dd></div>
-        </dl>
-      </button>
+      >{cardContents}</button> : <div className="product-focus product-static">{cardContents}</div>}
       {priceUrl && <a href={priceUrl} target="_blank" rel="noreferrer" className="buy-link">상품 보기 <span aria-hidden="true">↗</span></a>}
     </article>
   );
@@ -187,7 +190,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
         </defs>
         {yTicks.map((tick) => {
           const y = yFor(tick);
-          return <g key={tick}><line x1={pad.left} x2={width - pad.right} y1={y} y2={y} className="grid-line" /><text x={pad.left - 12} y={y + 4} textAnchor="end" className="axis-label">{number.format(Math.round(tick))}</text></g>;
+          return <g key={tick}><line x1={pad.left} x2={width - pad.right} y1={y} y2={y} className="grid-line" /><text x={pad.left - 12} y={y + 4} textAnchor="end" className="axis-label">{number.format(Math.round(tick))}</text><text x={width - pad.right - 3} y={y + 4} textAnchor="end" className="axis-label axis-label-mobile">{number.format(Math.round(tick))}</text></g>;
         })}
         {series.keys.map((key, index) => (index % labelStep === 0 || index === series.keys.length - 1) && (
           <text key={key} x={xFor(index)} y={height - 15} textAnchor={index === 0 ? 'start' : index === series.keys.length - 1 ? 'end' : 'middle'} className="axis-label">{formatChartLabel(key, series.unit)}</text>
@@ -269,18 +272,9 @@ function SupplementaryProducts({ products, dataEndDate }) {
   if (!products.length) return null;
   return (
     <section className="supplementary-section" aria-labelledby="supplementary-title">
-      <div className="section-heading"><div><p className="section-kicker">ADDITIONAL OBSERVATIONS</p><h2 id="supplementary-title">추가 구성 상품</h2></div><p>기존 가격군과 동일 상품으로 단정할 수 없는 구성은 시계열 비교에서 분리했습니다. 수집 이력이 쌓이면 별도 추세를 제공합니다.</p></div>
-      <div className="supplementary-list">
-        {products.map((product) => {
-          const stats = productStats(product, dataEndDate);
-          const url = stats.latest.sourceProductId ? `https://www.megamart.com/product/${stats.latest.sourceProductId}` : null;
-          return <article key={product.productId}>
-            <span>NEW SKU · {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span>
-            <h3>{product.name}</h3>
-            <strong>{number.format(stats.latest.price)}<small>원 / 100g</small></strong>
-            {url && <a href={url} target="_blank" rel="noreferrer">상품 보기 <span aria-hidden="true">↗</span></a>}
-          </article>;
-        })}
+      <div className="section-heading"><div><p className="section-kicker">ADDITIONAL OBSERVATIONS</p><h2 id="supplementary-title">추가 구성 상품</h2></div><p>기존 가격군과 동일 상품으로 단정할 수 없는 구성은 별도 카드로 수집합니다. 7회 이상의 이력이 쌓이면 변동 분석에도 포함합니다.</p></div>
+      <div className="product-grid supplementary-grid">
+        {products.sort((a, b) => productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price).map((product) => <ProductCard key={product.productId} product={product} dataEndDate={dataEndDate} isSupplementary />)}
       </div>
     </section>
   );
@@ -313,7 +307,11 @@ export default function App() {
   const supplementaryProducts = useMemo(() => products.filter((product) => !product.isCore), [products]);
   const visibleProducts = useMemo(() => coreProducts
     .filter((product) => category === 'all' || product.category === category)
-    .sort((a, b) => productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price), [coreProducts, category, dataEndDate]);
+    .sort((a, b) => {
+      if (a.category !== b.category) return a.category === 'beef' ? -1 : 1;
+      if (a.category === 'beef') return BEEF_CARD_ORDER.indexOf(a.productId) - BEEF_CARD_ORDER.indexOf(b.productId);
+      return productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price;
+    }), [coreProducts, category, dataEndDate]);
   const currentSeries = useMemo(() => ({ ...chartSeries(visibleProducts, unit, rangeDays, dataEndDate), unit }), [visibleProducts, unit, rangeDays, dataEndDate]);
   const windowDates = useMemo(() => dateRange(dataEndDate, 7), [dataEndDate]);
   const overview = useMemo(() => {
@@ -386,11 +384,6 @@ export default function App() {
         {hoveredPoint && <div className="chart-tooltip"><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
       </section>
 
-      <section className="analysis-grid">
-        <ChangeAnalysis products={visibleProducts} dataEndDate={dataEndDate} />
-        <CollectionTimeline observations={observations} dataEndDate={dataEndDate} />
-      </section>
-
       <section className="product-section">
         <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>미니 그래프는 <strong>최근 7회 실제 수집 값</strong>을 날짜와 함께 표시합니다. 날짜가 건너뛴 구간은 선으로 연결하지 않아 수집 공백을 숨기지 않습니다.</p></div>
         <div className="product-grid">
@@ -399,6 +392,11 @@ export default function App() {
       </section>
 
       {(category === 'all' || category === 'beef') && <SupplementaryProducts products={supplementaryProducts} dataEndDate={dataEndDate} />}
+
+      <section className="analysis-grid">
+        <ChangeAnalysis products={visibleProducts} dataEndDate={dataEndDate} />
+        <CollectionTimeline observations={observations} dataEndDate={dataEndDate} />
+      </section>
 
       <footer><span>가격은 매일 수집된 공개 판매가를 100g 단위로 환산합니다.</span><a href="https://github.com/pyw31337/meat" target="_blank" rel="noreferrer">데이터와 수집 방식 보기 ↗</a></footer>
     </main>
