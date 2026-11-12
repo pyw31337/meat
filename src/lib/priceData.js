@@ -1,7 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const BEEF_COLOR = '#ff705d';
-export const PORK_COLOR = '#5aa8ff';
+export const BEEF_COLOR = '#d94734';
+export const PORK_COLOR = '#2874c7';
 
 export function parseCsv(text) {
   const rows = [];

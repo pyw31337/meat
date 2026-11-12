@@ -61,9 +61,10 @@ function Sparkline({ product, windowDates }) {
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
   const latestIndex = values.findLastIndex(Number.isFinite);
   const latestPoint = segments.flat().find((point) => point[3] === latestIndex);
+  const recordedDays = values.filter(Number.isFinite).length;
 
   return (
-    <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 7일 가격 그래프`}>
+    <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 7일 가격 그래프. ${recordedDays}일의 가격이 기록되었습니다.`}>
       <svg className="sparkline" viewBox="0 0 240 68" role="img">
         <defs>
           <linearGradient id={`fill-${product.productId.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
@@ -72,14 +73,17 @@ function Sparkline({ product, windowDates }) {
           </linearGradient>
         </defs>
         <line className="spark-baseline" x1="7" x2="233" y1="60" y2="60" />
+        {windowDates.map((date, index) => {
+          const x = 7 + (index / Math.max(windowDates.length - 1, 1)) * 226;
+          return <line key={date} className="spark-guide" x1={x} x2={x} y1="57" y2="63" />;
+        })}
         {segments.map((segment, index) => (
           <path key={index} className="spark-path" d={pathFor(segment)} stroke={color} />
         ))}
         {latestPoint && <circle cx={latestPoint[0]} cy={latestPoint[1]} r="3.8" fill={color} className="spark-dot" />}
       </svg>
       <div className="spark-dates" aria-hidden="true">
-        <span>{formatDate(windowDates[0], { month: 'numeric', day: 'numeric' })}</span>
-        <span>{formatDate(windowDates.at(-1), { month: 'numeric', day: 'numeric' })}</span>
+        {windowDates.map((date, index) => <span key={date}>{index === 0 ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</span>)}
       </div>
     </div>
   );
@@ -89,6 +93,7 @@ function ProductCard({ product, dataEndDate, windowDates, isActive, onSelect }) 
   const stats = productStats(product, dataEndDate);
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
   const priceUrl = /^\d+$/.test(product.productId) ? `https://www.megamart.com/product/${product.productId}` : null;
+  const recordedDays = valuesForDates(product, windowDates).filter(Number.isFinite).length;
   const changeLabel = stats.change === null
     ? '7일 비교 데이터 없음'
     : `${stats.change > 0 ? '+' : ''}${number.format(stats.change)}원 · ${stats.changePercent > 0 ? '+' : ''}${stats.changePercent}%`;
@@ -110,8 +115,10 @@ function ProductCard({ product, dataEndDate, windowDates, isActive, onSelect }) 
         <div className="product-price"><strong>{number.format(stats.latest.price)}</strong><span>원 / 100g</span></div>
         <p className={`product-change ${stats.change > 0 ? 'up' : stats.change < 0 ? 'down' : ''}`}>{changeLabel}</p>
         <Sparkline product={product} windowDates={windowDates} />
+        <div className="record-meta"><span>최근 기록 {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span><span>7일 중 {recordedDays}일</span></div>
         <dl className="product-stats">
           <div><dt>최저</dt><dd>{number.format(stats.minimum)}원</dd></div>
+          <div><dt>최고</dt><dd>{number.format(stats.maximum)}원</dd></div>
           <div><dt>평균</dt><dd>{number.format(stats.average)}원</dd></div>
           <div><dt>기록</dt><dd>{product.observations.length}회</dd></div>
         </dl>
@@ -198,6 +205,19 @@ export default function App() {
     .sort((a, b) => productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price), [products, category, dataEndDate]);
   const currentSeries = useMemo(() => ({ ...chartSeries(visibleProducts, unit, rangeDays, dataEndDate), unit }), [visibleProducts, unit, rangeDays, dataEndDate]);
   const windowDates = useMemo(() => dateRange(dataEndDate, 7), [dataEndDate]);
+  const overview = useMemo(() => {
+    const latestObservations = observations.filter((item) => item.date === dataEndDate);
+    const recordedDays = windowDates.filter((date) => observations.some((item) => item.date === date)).length;
+    const changes = visibleProducts.map((product) => productStats(product, dataEndDate).change).filter((change) => change !== null);
+    return {
+      latestCount: latestObservations.length,
+      recordedDays,
+      beefCount: products.filter((product) => product.category === 'beef').length,
+      porkCount: products.filter((product) => product.category === 'pork').length,
+      rising: changes.filter((change) => change > 0).length,
+      falling: changes.filter((change) => change < 0).length,
+    };
+  }, [dataEndDate, observations, products, visibleProducts, windowDates]);
 
   useEffect(() => { setSelectedProduct(null); setHoveredPoint(null); }, [category, rangeDays, unit]);
 
@@ -214,10 +234,24 @@ export default function App() {
         <div className="data-status"><span className="live-dot" />마지막 수집 <strong>{formatDate(dataEndDate, { year: 'numeric', month: 'long', day: 'numeric' })}</strong></div>
       </header>
 
-      <section className="hero-copy">
-        <p className="eyebrow">100G UNIT PRICE / DAILY RECORD</p>
-        <h1>고기를 고르는 <em>가장 맑은 기준.</em></h1>
-        <p>상품별 단가를 분리해 기록하고, 중복 없는 일별 데이터로 가격 흐름을 보여드립니다.</p>
+      <section className="page-intro">
+        <div>
+          <p className="eyebrow">MEGAMART · UNIT PRICE TRACKER</p>
+          <h1>한우·삼겹살 가격 추이</h1>
+          <p>메가마트 공개 판매가를 상품별로 분리해 100g 단가로 환산한 일별 기록입니다.</p>
+        </div>
+        <dl className="method-note">
+          <div><dt>기록 기준</dt><dd>상품별 1일 1개 가격</dd></div>
+          <div><dt>표시 단위</dt><dd>원 / 100g</dd></div>
+          <div><dt>그래프 공백</dt><dd>수집 기록이 없는 날짜</dd></div>
+        </dl>
+      </section>
+
+      <section className="overview-grid" aria-label="가격 기록 요약">
+        <article><span>추적 상품</span><strong>{products.length}<small>개</small></strong><p>한우 {overview.beefCount}개 · 삼겹살 {overview.porkCount}개</p></article>
+        <article><span>최근 수집</span><strong>{overview.latestCount}<small>개</small></strong><p>{formatDate(dataEndDate, { month: 'long', day: 'numeric' })}에 기록된 상품</p></article>
+        <article><span>최근 7일 기록</span><strong>{overview.recordedDays}<small> / 7일</small></strong><p>기록된 날짜만 선으로 표시합니다</p></article>
+        <article><span>7일 가격 변동</span><strong className="movement"><b>↑ {overview.rising}</b><b>↓ {overview.falling}</b></strong><p>비교 가능한 상품 기준</p></article>
       </section>
 
       <section className="control-deck" aria-label="그래프 필터">
@@ -236,12 +270,12 @@ export default function App() {
           <div className="legend" aria-label="그래프 범례"><span><i className="legend-dot beef" />한우</span><span><i className="legend-dot pork" />삼겹살</span></div>
         </div>
         <PriceChart series={currentSeries} selectedProduct={selectedProduct} onPoint={setHoveredPoint} />
-        <div className="chart-footnote"><span>가격 단위: 원 / 100g</span><span>{currentSeries.keys.length}개 기간 · 상품 클릭 시 강조</span></div>
+        <div className="chart-footnote"><span>가격 단위: 원 / 100g · 기록이 없는 날짜는 선으로 연결하지 않습니다.</span><span>{currentSeries.keys.length}개 기간 · 상품 클릭 시 강조</span></div>
         {hoveredPoint && <div className="chart-tooltip"><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
       </section>
 
       <section className="product-section">
-        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>모든 미니 그래프는 <strong>{formatDate(windowDates[0], { month: 'numeric', day: 'numeric' })}–{formatDate(windowDates.at(-1), { month: 'numeric', day: 'numeric' })}</strong>의 동일한 7일 축입니다.</p></div>
+        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>미니 그래프는 <strong>{formatDate(windowDates[0], { month: 'numeric', day: 'numeric' })}–{formatDate(windowDates.at(-1), { month: 'numeric', day: 'numeric' })}</strong>의 7개 날짜를 모두 표시합니다. 선이 끊긴 곳은 가격이 없는 것이 아니라 수집 기록이 없는 날입니다.</p></div>
         <div className="product-grid">
           {visibleProducts.map((product) => <ProductCard key={product.productId} product={product} dataEndDate={dataEndDate} windowDates={windowDates} isActive={selectedProduct === product.productId} onSelect={() => setSelectedProduct((active) => active === product.productId ? null : product.productId)} />)}
         </div>
