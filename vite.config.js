@@ -4,5 +4,6 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Ensures relative assets loading for GitHub Pages standalone deployment
+  // Relative assets work both on GitHub Pages and in a local preview.
+  base: './',
 });

@@ -2,14 +2,13 @@
 venv/
 .venv/
 env/
+node_modules/
+dist/
 __pycache__/
 *.pyc
 
-# Local files
+# Local collector artefacts
 .env
-booking_checker.log
+*.log
 screenshots/
 screenshots_test/
-*.png
-!history/*.png
-cron.log

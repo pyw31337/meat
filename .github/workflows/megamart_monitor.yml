@@ -22,15 +22,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Install Korean Fonts
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y fonts-nanum
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
@@ -39,16 +34,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run Megamart Price Checker
+    - name: Run price collector
       env:
         RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       run: python megamart_checker.py
 
-    - name: Commit and Push History
+    - name: Commit price history
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add history/prices.csv history/price_trend.png README.md dashboard.html history/last_alert_sent.txt || true
-        git commit -m "chore: Update price history and trend chart" || echo "No changes to commit"
-        git push origin main || echo "No changes to push"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add history/prices.csv history/last_alert_sent.txt
+        git diff --staged --quiet || git commit -m "data: update daily price history"
+        git push origin main
