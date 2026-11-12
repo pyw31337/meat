@@ -9,6 +9,7 @@ another product with a similar grade name.
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import os
 import re
@@ -38,7 +39,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 BEEF_SEARCH_URL = "https://www.megamart.com/search/?text=%ED%95%9C%EC%9A%B0+%EB%93%B1%EC%8B%AC"
 PORK_SEARCH_URL = "https://www.megamart.com/search/?text=%EC%82%BC%EA%B2%B9%EC%82%B4+%EA%B5%AD%EB%82%B4%EC%82%B0"
 BEEF_PRICE_THRESHOLD = 7000
-PORK_PRICE_THRESHOLD = 2000
+PORK_PRICE_THRESHOLD = 1700
 CSV_FIELDS = ("date", "product_id", "product_name", "price")
 FORBIDDEN_PORK = ("목심", "목살", "앞다리", "뒷다리", "냉동", "갈매기살", "항정살", "수입")
 
@@ -240,6 +241,35 @@ def send_ntfy(title: str, message: str) -> bool:
         return False
 
 
+def send_web_push(title: str, message: str) -> bool:
+    """Dispatch to the optional server that owns PWA push subscriptions.
+
+    Browser subscriptions contain device-specific endpoints and must not be
+    committed to this repository. The external push service stores them and
+    applies the same price condition to every subscribed device.
+    """
+    endpoint = os.getenv("WEB_PUSH_DISPATCH_URL", "").strip()
+    if not endpoint:
+        return False
+    try:
+        headers = {"Content-Type": "application/json"}
+        token = os.getenv("WEB_PUSH_DISPATCH_TOKEN", "").strip()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        payload = json.dumps({
+            "title": title,
+            "body": message,
+            "url": "https://pyw31337.github.io/meat/",
+            "tag": "meat-price-alert",
+        }).encode("utf-8")
+        req = request.Request(endpoint, data=payload, headers=headers, method="POST")
+        with request.urlopen(req, timeout=15) as response:
+            return 200 <= response.status < 300
+    except Exception as error:
+        logging.warning("web push dispatch failed: %s", error)
+        return False
+
+
 def send_email(title: str, message: str) -> bool:
     recipient = os.getenv("RECEIVER_EMAIL", "").strip()
     if not recipient:
@@ -273,7 +303,7 @@ def notify_if_needed(observations: list[Observation]) -> None:
     lines.extend(["", "대시보드: https://pyw31337.github.io/meat/"])
     message = "\n".join(lines)
     title = "[메가마트] 조건 충족 가격 발견"
-    delivered = send_ntfy(title, message) or send_email(title, message)
+    delivered = any((send_web_push(title, message), send_ntfy(title, message), send_email(title, message)))
     if delivered:
         ALERT_STATE_PATH.write_text(today_kst(), encoding="utf-8")
         logging.info("Price alert delivered")

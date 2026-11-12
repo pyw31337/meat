@@ -38,6 +38,8 @@ jobs:
       env:
         RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        WEB_PUSH_DISPATCH_URL: ${{ secrets.WEB_PUSH_DISPATCH_URL }}
+        WEB_PUSH_DISPATCH_TOKEN: ${{ secrets.WEB_PUSH_DISPATCH_TOKEN }}
       run: python megamart_checker.py
 
     - name: Commit price history

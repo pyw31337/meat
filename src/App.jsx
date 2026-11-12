@@ -13,6 +13,7 @@ import {
   recentRecords,
   shortName,
 } from './lib/priceData';
+import { PUSH_CONFIG } from './pushConfig';
 
 const RANGE_OPTIONS = [
   { label: '30일', value: 30 },
@@ -30,6 +31,44 @@ const number = new Intl.NumberFormat('ko-KR');
 const BEEF_SERIES_COLORS = ['#c53f31', '#da6554', '#9b5545', '#e28a73'];
 const PORK_SERIES_COLORS = ['#1f6fae', '#3689c7', '#639fd0', '#4d759d', '#78add6', '#315d88'];
 const BEEF_CARD_ORDER = ['beef-grade-1pp', 'beef-grade-1p', 'beef-grade-1', 'beef-grade-1-1kg'];
+const ALERT_THRESHOLDS = { pork: 1700, beef: 7000 };
+
+function MeatIcon({ className = '' }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M8.82 14c1.18 0 1.73-.48 2.43-.97.76-.53 1.89-.91 2.75-.51.38.17 1.54.51 2 .51 1 0 2.12-.89 1.99-2.29C17.74 8.09 15.15 6 12 6s-5.68 2.04-5.98 4.66c-.18 1.59.95 3.34 2.8 3.34m.68-5c.83 0 1.5.67 1.5 1.5S10.33 12 9.5 12 8 11.33 8 10.5 8.67 9 9.5 9" />
+    <path d="M21.97 12.01c.02-.27.02-.55 0-.82C21.55 6.04 17.18 2 12 2s-9.45 3.88-9.95 9.02c-.04.44-.04.87 0 1.3v2.7c-.33 3.41 1.89 6.45 5.05 6.91a6 6 0 0 0 4.71-1.28c.8-.66 1.89-.75 2.84-.24.72.39 1.54.59 2.36.59h.01c1.27 0 2.48-.56 3.41-1.56 1.1-1.2 1.68-2.89 1.55-4.43l.03-3h-.03Zm-17.93-.8C4.44 7.1 7.86 4 12 4s7.64 3.23 7.97 7.35c.08 1-.26 2.02-.91 2.72-.39.42-1.06.93-2.06.93-.5 0-.98-.12-1.42-.36-1.67-.9-3.61-.72-5.05.45-.88.72-2 1.03-3.14.86-2.11-.31-3.58-2.39-3.35-4.74" />
+  </svg>;
+}
+
+function ExternalIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" /></svg>;
+}
+
+function ShareIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.8 7.5-4.5M8.2 13.2l7.5 4.5" /></svg>;
+}
+
+function BellIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>;
+}
+
+function CloseIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
+}
+
+function dealsAtThreshold(products) {
+  return products.filter((product) => productStats(product).latest.price <= ALERT_THRESHOLDS[product.category]);
+}
+
+function pushConfig() {
+  return PUSH_CONFIG;
+}
+
+function vapidKeyBytes(key) {
+  const normalized = `${key}${'='.repeat((4 - key.length % 4) % 4)}`.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = window.atob(normalized);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
 
 function seriesColor(product, products) {
   const family = products.filter((item) => item.category === product.category);
@@ -282,6 +321,86 @@ function SupplementaryProducts({ products, dataEndDate }) {
   );
 }
 
+function NotificationDialog({ products, onClose }) {
+  const [status, setStatus] = useState('');
+  const [isWorking, setIsWorking] = useState(false);
+  const config = pushConfig();
+  const hasPushServer = Boolean(config.subscribeUrl && config.vapidPublicKey);
+  const matchingProducts = dealsAtThreshold(products);
+
+  const enableNotifications = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      setStatus('이 브라우저에서는 웹 알림을 지원하지 않습니다. 최신 Safari, Chrome, 삼성 인터넷 또는 Whale에서 다시 시도해 주세요.');
+      return;
+    }
+
+    setIsWorking(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setStatus('알림 권한이 허용되지 않았습니다. 브라우저 또는 앱 설정에서 이 사이트의 알림을 허용해 주세요.');
+        return;
+      }
+
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) registration = await navigator.serviceWorker.register('./service-worker.js');
+      registration = await navigator.serviceWorker.ready;
+      localStorage.setItem('meat-price-alerts', JSON.stringify({ ...ALERT_THRESHOLDS, enabledAt: new Date().toISOString() }));
+
+      if (matchingProducts.length) {
+        const item = matchingProducts[0];
+        await registration.showNotification('메가마트 가격 조건 충족', {
+          body: `${shortName(item.name)} ${number.format(productStats(item).latest.price)}원 / 100g`,
+          icon: './pwa-192.png',
+          badge: './favicon.svg',
+          tag: 'meat-price-alert-preview',
+          data: { url: './' },
+        });
+      }
+
+      if (!hasPushServer) {
+        setStatus('이 기기의 알림 권한을 허용했습니다. 다만 앱이 닫힌 뒤 모든 기기에 가격 알림을 보내려면 푸시 발송 서버 연결이 필요합니다.');
+        return;
+      }
+
+      const subscription = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKeyBytes(config.vapidPublicKey),
+      });
+      const response = await fetch(config.subscribeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: subscription.toJSON(),
+          preferences: { porkAtOrBelow: ALERT_THRESHOLDS.pork, beefAtOrBelow: ALERT_THRESHOLDS.beef },
+        }),
+      });
+      if (!response.ok) throw new Error('구독 정보를 저장하지 못했습니다.');
+      setStatus('이 기기를 가격 알림 대상에 등록했습니다. 조건 충족 시 설치된 앱으로 알림을 보냅니다.');
+    } catch (notificationError) {
+      setStatus(notificationError.message || '알림 설정 중 오류가 발생했습니다.');
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  return (
+    <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="notification-dialog" role="dialog" aria-modal="true" aria-labelledby="notification-title">
+        <button type="button" className="dialog-close" onClick={onClose} aria-label="알림 설정 닫기"><CloseIcon /></button>
+        <div className="dialog-icon"><BellIcon /></div>
+        <p className="section-kicker">PRICE ALERT</p>
+        <h2 id="notification-title">가격 알림 설정</h2>
+        <p>삼겹살은 <strong>100g당 1,700원 이하</strong>, 한우는 <strong>100g당 7,000원 이하</strong>일 때 알림을 받습니다.</p>
+        <div className="notification-status"><span>{hasPushServer ? '발송 서버 연결됨' : '발송 서버 연결 필요'}</span><b>{matchingProducts.length ? `현재 ${matchingProducts.length}개 상품이 조건을 충족했습니다.` : '현재 조건을 충족한 상품이 없습니다.'}</b></div>
+        <button type="button" className="notification-enable" onClick={enableNotifications} disabled={isWorking}>{isWorking ? '알림 설정 중…' : '이 기기 알림 설정'}</button>
+        <p className="notification-help">iPhone/iPad에서는 Safari에서 ‘홈 화면에 추가’로 설치한 뒤 앱 안에서 알림을 설정할 수 있습니다.</p>
+        {status && <p className="notification-message" role="status">{status}</p>}
+      </section>
+    </div>
+  );
+}
+
 export default function App() {
   const [observations, setObservations] = useState([]);
   const [error, setError] = useState('');
@@ -290,6 +409,8 @@ export default function App() {
   const [category, setCategory] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -336,6 +457,35 @@ export default function App() {
   }, [coreProducts, dataEndDate, observations, supplementaryProducts, visibleProducts, windowDates]);
 
   useEffect(() => { setSelectedProduct(null); setHoveredPoint(null); }, [category, rangeDays, unit]);
+  useEffect(() => {
+    if (!shareMessage) return undefined;
+    const timeout = window.setTimeout(() => setShareMessage(''), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [shareMessage]);
+
+  const shareDashboard = async () => {
+    const shareData = {
+      title: '메가마트 가격 관측소',
+      text: '한우 등심과 삼겹살의 100g당 가격 추이를 확인하세요.',
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        setShareMessage('공유 메뉴를 열었습니다. 카카오톡을 선택하면 미리보기 이미지와 설명이 함께 표시됩니다.');
+      } catch (shareError) {
+        if (shareError.name !== 'AbortError') setShareMessage('공유 메뉴를 열지 못했습니다. URL을 복사해 공유해 주세요.');
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareMessage('공유 링크를 복사했습니다. 카카오톡 대화창에 붙여넣어 공유할 수 있습니다.');
+    } catch {
+      setShareMessage('이 브라우저에서는 자동 복사를 지원하지 않습니다. 주소창의 URL을 복사해 주세요.');
+    }
+  };
 
   if (error) return <main className="state-screen"><p>데이터를 불러오지 못했습니다.</p><span>{error}</span></main>;
   if (!observations.length) return <main className="state-screen"><div className="loading-orb" /><p>가격 기록을 불러오는 중입니다</p></main>;
@@ -344,11 +494,19 @@ export default function App() {
     <main className="page-shell">
       <header className="masthead">
         <a className="brand" href="./" aria-label="메가마트 가격 관측소 첫 화면">
-          <span className="brand-mark"><i /><i /><i /></span>
+          <span className="brand-mark"><MeatIcon /></span>
           <span><small>MEAT MARKET · PRICE WATCH</small><strong>가격 관측소</strong></span>
         </a>
-        <div className="data-status"><span className="live-dot" />마지막 수집 <strong>{formatDate(dataEndDate, { year: 'numeric', month: 'long', day: 'numeric' })}</strong></div>
+        <div className="header-utilities">
+          <div className="data-status"><span className="live-dot" />마지막 수집 <strong>{formatDate(dataEndDate, { year: 'numeric', month: 'long', day: 'numeric' })}</strong></div>
+          <div className="header-actions" aria-label="서비스 도구">
+            <a className="header-action megamart-action" href="https://www.megamart.com/" target="_blank" rel="noreferrer"><ExternalIcon />메가마트 가기</a>
+            <button type="button" className="header-action" onClick={shareDashboard}><ShareIcon />공유</button>
+            <button type="button" className="header-action" onClick={() => setIsNotificationDialogOpen(true)}><BellIcon />알림 설정</button>
+          </div>
+        </div>
       </header>
+      {shareMessage && <div className="share-toast" role="status">{shareMessage}</div>}
 
       <section className="page-intro">
         <div>
@@ -405,6 +563,7 @@ export default function App() {
       </section>
 
       <footer><span>가격은 매일 수집된 공개 판매가를 100g 단위로 환산합니다.</span><a href="https://github.com/pyw31337/meat" target="_blank" rel="noreferrer">데이터와 수집 방식 보기 ↗</a></footer>
+      {isNotificationDialogOpen && <NotificationDialog products={coreProducts} onClose={() => setIsNotificationDialogOpen(false)} />}
     </main>
   );
 }
