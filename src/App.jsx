@@ -157,7 +157,9 @@ function PriceChart({ series, selectedProduct, onPoint }) {
   const scrollRef = useRef(null);
   const width = 980;
   const height = 410;
-  const pad = { top: 34, right: 28, bottom: 42, left: 66 };
+  // Keep room only for the y-axis labels.  The SVG itself is allowed to
+  // stretch to the chart shell, so the plotted series use the full width.
+  const pad = { top: 34, right: 12, bottom: 42, left: 52 };
   const allValues = series.products.flatMap((product) => product.values).filter(Number.isFinite);
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
@@ -184,7 +186,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
       <p className="mobile-chart-hint" aria-hidden="true">최근 기간부터 표시 중 · 좌우로 밀어 전체 기간 보기</p>
       <div className="chart-scroll" ref={scrollRef} tabIndex="0" aria-label="가격 추이 그래프. 모바일에서는 좌우로 밀어 전체 기간을 볼 수 있습니다.">
       <div className="chart-canvas">
-      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
+      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
         <defs>
           <filter id="glow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
@@ -303,8 +305,12 @@ export default function App() {
 
   const dataEndDate = useMemo(() => latestDate(observations), [observations]);
   const products = useMemo(() => getProductSeries(observations), [observations]);
-  const coreProducts = useMemo(() => products.filter((product) => product.isCore), [products]);
-  const supplementaryProducts = useMemo(() => products.filter((product) => !product.isCore), [products]);
+  // A card is a current store listing, not an archive entry.  Products that
+  // disappeared from the newest collection run stay in the CSV history but
+  // are excluded from the dashboard, chart, and analysis.
+  const currentProducts = useMemo(() => products.filter((product) => product.observations.at(-1)?.date === dataEndDate), [dataEndDate, products]);
+  const coreProducts = useMemo(() => currentProducts.filter((product) => product.isCore), [currentProducts]);
+  const supplementaryProducts = useMemo(() => currentProducts.filter((product) => !product.isCore), [currentProducts]);
   const visibleProducts = useMemo(() => coreProducts
     .filter((product) => category === 'all' || product.category === category)
     .sort((a, b) => {
