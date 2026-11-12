@@ -44,6 +44,43 @@ export function categoryFor(name) {
   return name.includes('삼겹살') ? 'pork' : 'beef';
 }
 
+function coreProduct(productId, name, category) {
+  return { productId, name, category, isCore: true };
+}
+
+function supplementaryName(name) {
+  return name
+    .replace(/^\[[^\]]+\]\s*/, '')
+    .replace(/\s*구이용\s*/g, ' ')
+    .replace(/\s*\(국내산\)\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// The historical file used stable, shopper-facing product families while the
+// current collector stores the real SKU name.  Mapping known equivalents here
+// keeps one continuous series instead of showing two cards for the same item.
+export function productIdentity(rawProductId, name) {
+  if (name.includes('포크밸리') && name.includes('삼겹살')) return coreProduct('pork-porkvalley-100g', '포크밸리 삼겹살 (100g)', 'pork');
+  if (name.includes('제주') && name.includes('삼겹살')) return coreProduct('pork-jeju-100g', '제주 삼겹살 (100g)', 'pork');
+  if ((name.includes('흑돼지') || name.includes('흑삼겹살')) && name.includes('삼겹살')) return coreProduct('pork-black-100g', '흑돼지 삼겹살 (100g)', 'pork');
+  if (name.includes('꽃 삼겹살') || name.includes('꽃삼겹살')) return coreProduct('pork-flower-600g', '꽃 삼겹살 (600g)', 'pork');
+  if (name.includes('삼겹살') && name.includes('1kg')) return coreProduct('pork-belly-1kg', '삼겹살 (1kg팩)', 'pork');
+  if (name.includes('삼겹살')) return coreProduct('pork-belly-100g', '삼겹살 (100g)', 'pork');
+
+  if (name.includes('1kg') && name.includes('한우') && name.includes('등심')) return coreProduct('beef-grade-1-1kg', '1등급 한우 등심 (1kg)', 'beef');
+  if (name.includes('1++등급') && name.includes('등심') && !name.includes('갈비살') && !name.includes('특수부위')) return coreProduct('beef-grade-1pp', '1++등급 한우 등심', 'beef');
+  if (name.includes('1+등급') && name.includes('등심')) return coreProduct('beef-grade-1p', '1+등급 한우 등심', 'beef');
+  if (name.includes('1등급') && name.includes('한우') && name.includes('등심')) return coreProduct('beef-grade-1', '1등급 한우 등심', 'beef');
+
+  return {
+    productId: `sku:${rawProductId}`,
+    name: supplementaryName(name),
+    category: categoryFor(name),
+    isCore: false,
+  };
+}
+
 export function shortName(name) {
   return name
     .replace(/\s*\(국내산\)\s*/g, ' ')
@@ -71,15 +108,26 @@ export function parseObservations(csvText) {
     const date = row[dateIndex]?.trim();
     const name = row[nameIndex]?.trim();
     const price = Number(row[priceIndex]);
-    const productId = row[idIndex]?.trim() || `legacy:${name}`;
+    const rawProductId = row[idIndex]?.trim() || `legacy:${name}`;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !name || !Number.isFinite(price) || price <= 0) continue;
 
-    // Legacy history did not retain a SKU. Retaining the daily lowest unit
-    // price prevents its duplicate rows from distorting the dashboard.
-    const key = `${date}\u0000${productId}`;
+    const identity = productIdentity(rawProductId, name);
+    const sourceProductId = /^\d+$/.test(rawProductId) ? rawProductId : null;
+    const key = `${date}\u0000${identity.productId}`;
     const previous = daily.get(key);
-    if (!previous || price < previous.price) {
-      daily.set(key, { date, productId, name, price, category: categoryFor(name) });
+    const current = {
+      date,
+      ...identity,
+      price,
+      sourceProductId,
+      sourceName: name,
+    };
+
+    // A current direct-product SKU is more useful than a legacy entry or a
+    // steak variant when two rows describe the same canonical family.
+    const priority = (item) => (item.sourceProductId ? (item.sourceName.includes('스테이크') ? 1 : 2) : 0);
+    if (!previous || priority(current) > priority(previous) || (priority(current) === priority(previous) && price < previous.price)) {
+      daily.set(key, current);
     }
   }
 
@@ -135,11 +183,14 @@ export function getProductSeries(observations) {
   }));
 }
 
+export function recentRecords(product, count = 7) {
+  return product.observations.slice(-count);
+}
+
 export function productStats(product, dataEndDate) {
   const values = product.observations.map((item) => item.price);
   const latest = product.observations.at(-1);
-  const baselineDate = shiftDate(latest.date, -7);
-  const baseline = [...product.observations].reverse().find((item) => item.date <= baselineDate);
+  const baseline = product.observations.length >= 7 ? product.observations.at(-7) : null;
   const change = baseline ? latest.price - baseline.price : null;
 
   return {
@@ -166,7 +217,12 @@ export function chartSeries(products, unit, rangeDays, dataEndDate) {
     observations: product.observations.filter((item) => !startDate || item.date >= startDate),
   })).filter((product) => product.observations.length);
 
-  const keys = [...new Set(filtered.flatMap((product) => product.observations.map((item) => groupKey(item.date, unit))))].sort();
+  const firstObservedDate = filtered.flatMap((product) => product.observations.map((item) => item.date)).sort()[0];
+  const firstDate = startDate || firstObservedDate;
+  const dayCount = Math.round((new Date(`${dataEndDate}T12:00:00Z`) - new Date(`${firstDate}T12:00:00Z`)) / DAY_MS) + 1;
+  const keys = unit === 'day'
+    ? Array.from({ length: dayCount }, (_, index) => shiftDate(firstDate, index))
+    : [...new Set(filtered.flatMap((product) => product.observations.map((item) => groupKey(item.date, unit))))].sort();
   return {
     keys,
     products: filtered.map((product) => {

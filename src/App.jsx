@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BEEF_COLOR,
   PORK_COLOR,
@@ -10,8 +10,8 @@ import {
   latestDate,
   parseObservations,
   productStats,
+  recentRecords,
   shortName,
-  valuesForDates,
 } from './lib/priceData';
 
 const RANGE_OPTIONS = [
@@ -27,8 +27,17 @@ const UNIT_OPTIONS = [
 ];
 
 const number = new Intl.NumberFormat('ko-KR');
+const BEEF_SERIES_COLORS = ['#c53f31', '#da6554', '#9b5545', '#e28a73'];
+const PORK_SERIES_COLORS = ['#1f6fae', '#3689c7', '#639fd0', '#4d759d', '#78add6', '#315d88'];
 
-function lineSegments(values, width, height, pad) {
+function seriesColor(product, products) {
+  const family = products.filter((item) => item.category === product.category);
+  const index = family.findIndex((item) => item.productId === product.productId);
+  const colors = product.category === 'pork' ? PORK_SERIES_COLORS : BEEF_SERIES_COLORS;
+  return colors[index % colors.length];
+}
+
+function lineSegments(values, width, height, pad, dates = []) {
   const numeric = values.filter(Number.isFinite);
   if (!numeric.length) return { segments: [], min: 0, max: 1 };
   const min = Math.min(...numeric);
@@ -45,6 +54,14 @@ function lineSegments(values, width, height, pad) {
       segment = [];
       return;
     }
+    if (segment.length && dates[index] && dates[index - 1]) {
+      const previous = new Date(`${dates[index - 1]}T12:00:00Z`);
+      const current = new Date(`${dates[index]}T12:00:00Z`);
+      if ((current - previous) / 86_400_000 > 1) {
+        segments.push(segment);
+        segment = [];
+      }
+    }
     segment.push([xFor(index), yFor(value), value, index]);
   });
   if (segment.length) segments.push(segment);
@@ -55,16 +72,17 @@ function pathFor(points) {
   return points.map(([x, y], index) => `${index ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
 }
 
-function Sparkline({ product, windowDates }) {
-  const values = valuesForDates(product, windowDates);
-  const { segments } = lineSegments(values, 240, 68, 7);
+function Sparkline({ product }) {
+  const records = recentRecords(product);
+  const values = records.map((record) => record.price);
+  const dates = records.map((record) => record.date);
+  const { segments } = lineSegments(values, 240, 68, 7, dates);
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
   const latestIndex = values.findLastIndex(Number.isFinite);
   const latestPoint = segments.flat().find((point) => point[3] === latestIndex);
-  const recordedDays = values.filter(Number.isFinite).length;
 
   return (
-    <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 7일 가격 그래프. ${recordedDays}일의 가격이 기록되었습니다.`}>
+    <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 ${records.length}회 수집 가격 그래프`}>
       <svg className="sparkline" viewBox="0 0 240 68" role="img">
         <defs>
           <linearGradient id={`fill-${product.productId.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
@@ -73,8 +91,8 @@ function Sparkline({ product, windowDates }) {
           </linearGradient>
         </defs>
         <line className="spark-baseline" x1="7" x2="233" y1="60" y2="60" />
-        {windowDates.map((date, index) => {
-          const x = 7 + (index / Math.max(windowDates.length - 1, 1)) * 226;
+        {dates.map((date, index) => {
+          const x = 7 + (index / Math.max(dates.length - 1, 1)) * 226;
           return <line key={date} className="spark-guide" x1={x} x2={x} y1="57" y2="63" />;
         })}
         {segments.map((segment, index) => (
@@ -83,19 +101,23 @@ function Sparkline({ product, windowDates }) {
         {latestPoint && <circle cx={latestPoint[0]} cy={latestPoint[1]} r="3.8" fill={color} className="spark-dot" />}
       </svg>
       <div className="spark-dates" aria-hidden="true">
-        {windowDates.map((date, index) => <span key={date}>{index === 0 ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</span>)}
+        {dates.map((date, index) => {
+          const previous = dates[index - 1];
+          const newMonth = !previous || previous.slice(5, 7) !== date.slice(5, 7);
+          return <span key={date}>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</span>;
+        })}
       </div>
     </div>
   );
 }
 
-function ProductCard({ product, dataEndDate, windowDates, isActive, onSelect }) {
+function ProductCard({ product, dataEndDate, isActive, onSelect }) {
   const stats = productStats(product, dataEndDate);
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
-  const priceUrl = /^\d+$/.test(product.productId) ? `https://www.megamart.com/product/${product.productId}` : null;
-  const recordedDays = valuesForDates(product, windowDates).filter(Number.isFinite).length;
+  const priceUrl = stats.latest.sourceProductId ? `https://www.megamart.com/product/${stats.latest.sourceProductId}` : null;
+  const records = recentRecords(product);
   const changeLabel = stats.change === null
-    ? '7일 비교 데이터 없음'
+    ? '7회 비교 데이터 없음'
     : `${stats.change > 0 ? '+' : ''}${number.format(stats.change)}원 · ${stats.changePercent > 0 ? '+' : ''}${stats.changePercent}%`;
 
   return (
@@ -114,8 +136,8 @@ function ProductCard({ product, dataEndDate, windowDates, isActive, onSelect }) 
         <h3 title={product.name}>{shortName(product.name)}</h3>
         <div className="product-price"><strong>{number.format(stats.latest.price)}</strong><span>원 / 100g</span></div>
         <p className={`product-change ${stats.change > 0 ? 'up' : stats.change < 0 ? 'down' : ''}`}>{changeLabel}</p>
-        <Sparkline product={product} windowDates={windowDates} />
-        <div className="record-meta"><span>최근 기록 {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span><span>7일 중 {recordedDays}일</span></div>
+        <Sparkline product={product} />
+        <div className="record-meta"><span>최근 {records.length}회 수집 기록</span><span>마지막 {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span></div>
         <dl className="product-stats">
           <div><dt>최저</dt><dd>{number.format(stats.minimum)}원</dd></div>
           <div><dt>최고</dt><dd>{number.format(stats.maximum)}원</dd></div>
@@ -129,6 +151,7 @@ function ProductCard({ product, dataEndDate, windowDates, isActive, onSelect }) 
 }
 
 function PriceChart({ series, selectedProduct, onPoint }) {
+  const scrollRef = useRef(null);
   const width = 980;
   const height = 410;
   const pad = { top: 34, right: 28, bottom: 42, left: 66 };
@@ -146,8 +169,18 @@ function PriceChart({ series, selectedProduct, onPoint }) {
   const yTicks = Array.from({ length: 5 }, (_, index) => yMin + (yRange * index) / 4);
   const labelStep = Math.max(1, Math.ceil(series.keys.length / 6));
 
+  useEffect(() => {
+    const scrollNode = scrollRef.current;
+    if (!scrollNode || !window.matchMedia('(max-width: 780px)').matches) return undefined;
+    const frame = requestAnimationFrame(() => { scrollNode.scrollLeft = scrollNode.scrollWidth - scrollNode.clientWidth; });
+    return () => cancelAnimationFrame(frame);
+  }, [series.keys.length, series.unit]);
+
   return (
     <div className="chart-shell">
+      <p className="mobile-chart-hint" aria-hidden="true">최근 기간부터 표시 중 · 좌우로 밀어 전체 기간 보기</p>
+      <div className="chart-scroll" ref={scrollRef} tabIndex="0" aria-label="가격 추이 그래프. 모바일에서는 좌우로 밀어 전체 기간을 볼 수 있습니다.">
+      <div className="chart-canvas">
       <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
         <defs>
           <filter id="glow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -160,7 +193,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
           <text key={key} x={xFor(index)} y={height - 15} textAnchor={index === 0 ? 'start' : index === series.keys.length - 1 ? 'end' : 'middle'} className="axis-label">{formatChartLabel(key, series.unit)}</text>
         ))}
         {series.products.map((product) => {
-          const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
+          const color = seriesColor(product, series.products);
           const dimmed = selectedProduct && product.productId !== selectedProduct;
           const points = product.values.map((value, index) => (Number.isFinite(value) ? [xFor(index), yFor(value), value, index] : null));
           const segments = [];
@@ -173,7 +206,83 @@ function PriceChart({ series, selectedProduct, onPoint }) {
           </g>;
         })}
       </svg>
+      </div>
+      </div>
     </div>
+  );
+}
+
+function ChangeAnalysis({ products, dataEndDate }) {
+  const rows = products
+    .map((product) => ({ product, stats: productStats(product, dataEndDate) }))
+    .filter(({ stats }) => stats.change !== null)
+    .sort((a, b) => Math.abs(b.stats.changePercent) - Math.abs(a.stats.changePercent));
+  const maxPercent = Math.max(...rows.map(({ stats }) => Math.abs(stats.changePercent)), 1);
+
+  return (
+    <section className="analysis-card card-surface" aria-labelledby="change-analysis-title">
+      <div className="analysis-heading">
+        <div><p className="section-kicker">WEEKLY CHANGE</p><h2 id="change-analysis-title">최근 7회 기준 변동</h2></div>
+        <p>마지막 가격과 7번째 이전 수집 가격을 비교합니다.</p>
+      </div>
+      <div className="change-list">
+        {rows.map(({ product, stats }) => {
+          const positive = stats.change > 0;
+          const width = `${Math.max(8, Math.round((Math.abs(stats.changePercent) / maxPercent) * 100))}%`;
+          return <div className="change-row" key={product.productId}>
+            <span title={product.name}>{shortName(product.name)}</span>
+            <div className="change-track" aria-hidden="true"><i className={positive ? 'up' : 'down'} style={{ '--bar-width': width }} /></div>
+            <strong className={positive ? 'up' : 'down'}>{positive ? '+' : ''}{stats.changePercent}%</strong>
+          </div>;
+        })}
+      </div>
+    </section>
+  );
+}
+
+function CollectionTimeline({ observations, dataEndDate }) {
+  const dates = dateRange(dataEndDate, 14);
+  const counts = new Map();
+  observations.forEach((item) => counts.set(item.date, (counts.get(item.date) ?? 0) + 1));
+
+  return (
+    <section className="collection-card card-surface" aria-labelledby="collection-title">
+      <div className="analysis-heading">
+        <div><p className="section-kicker">COLLECTION COVERAGE</p><h2 id="collection-title">최근 14일 수집 현황</h2></div>
+        <p>칸의 숫자는 해당 날짜에 기록된 가격군 수입니다.</p>
+      </div>
+      <div className="collection-days">
+        {dates.map((date) => {
+          const count = counts.get(date) ?? 0;
+          return <div className={count ? 'collection-day is-recorded' : 'collection-day'} key={date} title={`${date}: ${count}개 기록`}>
+            <time dateTime={date}>{Number(date.slice(5, 7))}.{Number(date.slice(8, 10))}</time>
+            <strong>{count || '–'}</strong>
+          </div>;
+        })}
+      </div>
+      <p className="collection-note"><i />기록된 날 <b>{dates.filter((date) => counts.has(date)).length}일</b> <span>·</span> <i className="empty" />기록 없음</p>
+    </section>
+  );
+}
+
+function SupplementaryProducts({ products, dataEndDate }) {
+  if (!products.length) return null;
+  return (
+    <section className="supplementary-section" aria-labelledby="supplementary-title">
+      <div className="section-heading"><div><p className="section-kicker">ADDITIONAL OBSERVATIONS</p><h2 id="supplementary-title">추가 구성 상품</h2></div><p>기존 가격군과 동일 상품으로 단정할 수 없는 구성은 시계열 비교에서 분리했습니다. 수집 이력이 쌓이면 별도 추세를 제공합니다.</p></div>
+      <div className="supplementary-list">
+        {products.map((product) => {
+          const stats = productStats(product, dataEndDate);
+          const url = stats.latest.sourceProductId ? `https://www.megamart.com/product/${stats.latest.sourceProductId}` : null;
+          return <article key={product.productId}>
+            <span>NEW SKU · {formatDate(stats.latest.date, { month: 'numeric', day: 'numeric' })}</span>
+            <h3>{product.name}</h3>
+            <strong>{number.format(stats.latest.price)}<small>원 / 100g</small></strong>
+            {url && <a href={url} target="_blank" rel="noreferrer">상품 보기 <span aria-hidden="true">↗</span></a>}
+          </article>;
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -200,9 +309,11 @@ export default function App() {
 
   const dataEndDate = useMemo(() => latestDate(observations), [observations]);
   const products = useMemo(() => getProductSeries(observations), [observations]);
-  const visibleProducts = useMemo(() => products
+  const coreProducts = useMemo(() => products.filter((product) => product.isCore), [products]);
+  const supplementaryProducts = useMemo(() => products.filter((product) => !product.isCore), [products]);
+  const visibleProducts = useMemo(() => coreProducts
     .filter((product) => category === 'all' || product.category === category)
-    .sort((a, b) => productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price), [products, category, dataEndDate]);
+    .sort((a, b) => productStats(a, dataEndDate).latest.price - productStats(b, dataEndDate).latest.price), [coreProducts, category, dataEndDate]);
   const currentSeries = useMemo(() => ({ ...chartSeries(visibleProducts, unit, rangeDays, dataEndDate), unit }), [visibleProducts, unit, rangeDays, dataEndDate]);
   const windowDates = useMemo(() => dateRange(dataEndDate, 7), [dataEndDate]);
   const overview = useMemo(() => {
@@ -212,12 +323,13 @@ export default function App() {
     return {
       latestCount: latestObservations.length,
       recordedDays,
-      beefCount: products.filter((product) => product.category === 'beef').length,
-      porkCount: products.filter((product) => product.category === 'pork').length,
+      beefCount: coreProducts.filter((product) => product.category === 'beef').length,
+      porkCount: coreProducts.filter((product) => product.category === 'pork').length,
       rising: changes.filter((change) => change > 0).length,
       falling: changes.filter((change) => change < 0).length,
+      supplementaryCount: supplementaryProducts.length,
     };
-  }, [dataEndDate, observations, products, visibleProducts, windowDates]);
+  }, [coreProducts, dataEndDate, observations, supplementaryProducts, visibleProducts, windowDates]);
 
   useEffect(() => { setSelectedProduct(null); setHoveredPoint(null); }, [category, rangeDays, unit]);
 
@@ -248,10 +360,10 @@ export default function App() {
       </section>
 
       <section className="overview-grid" aria-label="가격 기록 요약">
-        <article><span>추적 상품</span><strong>{products.length}<small>개</small></strong><p>한우 {overview.beefCount}개 · 삼겹살 {overview.porkCount}개</p></article>
-        <article><span>최근 수집</span><strong>{overview.latestCount}<small>개</small></strong><p>{formatDate(dataEndDate, { month: 'long', day: 'numeric' })}에 기록된 상품</p></article>
+        <article><span>비교 상품군</span><strong>{coreProducts.length}<small>개</small></strong><p>한우 {overview.beefCount}개 · 삼겹살 {overview.porkCount}개 {overview.supplementaryCount ? `· 추가 ${overview.supplementaryCount}개` : ''}</p></article>
+        <article><span>최근 관측 가격군</span><strong>{overview.latestCount}<small>개</small></strong><p>{formatDate(dataEndDate, { month: 'long', day: 'numeric' })}에 기록된 가격군</p></article>
         <article><span>최근 7일 기록</span><strong>{overview.recordedDays}<small> / 7일</small></strong><p>기록된 날짜만 선으로 표시합니다</p></article>
-        <article><span>7일 가격 변동</span><strong className="movement"><b>↑ {overview.rising}</b><b>↓ {overview.falling}</b></strong><p>비교 가능한 상품 기준</p></article>
+        <article><span>최근 7회 가격 변동</span><strong className="movement"><b>↑ {overview.rising}</b><b>↓ {overview.falling}</b></strong><p>비교 가능한 상품 기준</p></article>
       </section>
 
       <section className="control-deck" aria-label="그래프 필터">
@@ -274,12 +386,19 @@ export default function App() {
         {hoveredPoint && <div className="chart-tooltip"><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
       </section>
 
+      <section className="analysis-grid">
+        <ChangeAnalysis products={visibleProducts} dataEndDate={dataEndDate} />
+        <CollectionTimeline observations={observations} dataEndDate={dataEndDate} />
+      </section>
+
       <section className="product-section">
-        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>미니 그래프는 <strong>{formatDate(windowDates[0], { month: 'numeric', day: 'numeric' })}–{formatDate(windowDates.at(-1), { month: 'numeric', day: 'numeric' })}</strong>의 7개 날짜를 모두 표시합니다. 선이 끊긴 곳은 가격이 없는 것이 아니라 수집 기록이 없는 날입니다.</p></div>
+        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>미니 그래프는 <strong>최근 7회 실제 수집 값</strong>을 날짜와 함께 표시합니다. 날짜가 건너뛴 구간은 선으로 연결하지 않아 수집 공백을 숨기지 않습니다.</p></div>
         <div className="product-grid">
-          {visibleProducts.map((product) => <ProductCard key={product.productId} product={product} dataEndDate={dataEndDate} windowDates={windowDates} isActive={selectedProduct === product.productId} onSelect={() => setSelectedProduct((active) => active === product.productId ? null : product.productId)} />)}
+          {visibleProducts.map((product) => <ProductCard key={product.productId} product={product} dataEndDate={dataEndDate} isActive={selectedProduct === product.productId} onSelect={() => setSelectedProduct((active) => active === product.productId ? null : product.productId)} />)}
         </div>
       </section>
+
+      {(category === 'all' || category === 'beef') && <SupplementaryProducts products={supplementaryProducts} dataEndDate={dataEndDate} />}
 
       <footer><span>가격은 매일 수집된 공개 판매가를 100g 단위로 환산합니다.</span><a href="https://github.com/pyw31337/meat" target="_blank" rel="noreferrer">데이터와 수집 방식 보기 ↗</a></footer>
     </main>
