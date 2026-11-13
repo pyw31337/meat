@@ -1,5 +1,5 @@
-const CACHE_NAME = 'meat-price-watch-v2';
-const APP_SHELL = ['./', './manifest.webmanifest', './meat-object.svg', './assets/meat-marbling-texture.jpg', './favicon-object.png', './pwa-192.png', './pwa-512.png'];
+const CACHE_NAME = 'meat-price-watch-v3';
+const APP_SHELL = ['./', './manifest.webmanifest', './favicon-object.png', './pwa-192.png', './pwa-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
