@@ -1,5 +1,5 @@
-const CACHE_NAME = 'meat-price-watch-v1';
-const APP_SHELL = ['./', './manifest.webmanifest', './favicon.svg', './pwa-192.png', './pwa-512.png'];
+const CACHE_NAME = 'meat-price-watch-v2';
+const APP_SHELL = ['./', './manifest.webmanifest', './meat-object.svg', './assets/meat-marbling-texture.jpg', './favicon-object.png', './pwa-192.png', './pwa-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -23,7 +23,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(payload.title || '메가마트 가격 관측소', {
     body: payload.body || '조건에 맞는 가격을 확인하세요.',
     icon: './pwa-192.png',
-    badge: './favicon.svg',
+    badge: './favicon-object.png',
     tag: payload.tag || 'meat-price-alert',
     renotify: true,
     data: { url: payload.url || './' },

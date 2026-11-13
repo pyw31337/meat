@@ -194,11 +194,12 @@ function ProductCard({ product, dataEndDate, isActive = false, onSelect, isSuppl
 
 function PriceChart({ series, selectedProduct, onPoint }) {
   const scrollRef = useRef(null);
-  const width = 980;
+  const canvasRef = useRef(null);
   const height = 410;
-  // Keep room only for the y-axis labels.  The SVG itself is allowed to
-  // stretch to the chart shell, so the plotted series use the full width.
-  const pad = { top: 34, right: 12, bottom: 42, left: 52 };
+  const [width, setWidth] = useState(980);
+  // The coordinates use the *same* aspect ratio as the rendered canvas.
+  // That fills the card while preserving circular data points as circles.
+  const pad = { top: 34, right: 0, bottom: 42, left: 0 };
   const allValues = series.products.flatMap((product) => product.values).filter(Number.isFinite);
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
@@ -220,18 +221,34 @@ function PriceChart({ series, selectedProduct, onPoint }) {
     return () => cancelAnimationFrame(frame);
   }, [series.keys.length, series.unit]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const updateViewBox = () => {
+      if (!canvas.clientWidth || !canvas.clientHeight) return;
+      const nextWidth = Math.round((canvas.clientWidth / canvas.clientHeight) * height);
+      setWidth((currentWidth) => (Math.abs(currentWidth - nextWidth) < 1 ? currentWidth : nextWidth));
+    };
+
+    updateViewBox();
+    const observer = new ResizeObserver(updateViewBox);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="chart-shell">
       <p className="mobile-chart-hint" aria-hidden="true">최근 기간부터 표시 중 · 좌우로 밀어 전체 기간 보기</p>
       <div className="chart-scroll" ref={scrollRef} tabIndex="0" aria-label="가격 추이 그래프. 모바일에서는 좌우로 밀어 전체 기간을 볼 수 있습니다.">
-      <div className="chart-canvas">
-      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
+      <div className="chart-canvas" ref={canvasRef}>
+      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
         <defs>
           <filter id="glow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
         {yTicks.map((tick) => {
           const y = yFor(tick);
-          return <g key={tick}><line x1={pad.left} x2={width - pad.right} y1={y} y2={y} className="grid-line" /><text x={pad.left - 12} y={y + 4} textAnchor="end" className="axis-label">{number.format(Math.round(tick))}</text><text x={width - pad.right - 3} y={y + 4} textAnchor="end" className="axis-label axis-label-mobile">{number.format(Math.round(tick))}</text></g>;
+          return <g key={tick}><line x1={pad.left} x2={width - pad.right} y1={y} y2={y} className="grid-line" /><text x="5" y={y + 4} textAnchor="start" className="axis-label">{number.format(Math.round(tick))}</text><text x={width - 5} y={y + 4} textAnchor="end" className="axis-label axis-label-mobile">{number.format(Math.round(tick))}</text></g>;
         })}
         {series.keys.map((key, index) => (index % labelStep === 0 || index === series.keys.length - 1) && (
           <text key={key} x={xFor(index)} y={height - 15} textAnchor={index === 0 ? 'start' : index === series.keys.length - 1 ? 'end' : 'middle'} className="axis-label">{formatChartLabel(key, series.unit)}</text>
@@ -352,7 +369,7 @@ function NotificationDialog({ products, onClose }) {
         await registration.showNotification('메가마트 가격 조건 충족', {
           body: `${shortName(item.name)} ${number.format(productStats(item).latest.price)}원 / 100g`,
           icon: './pwa-192.png',
-          badge: './favicon.svg',
+          badge: './favicon-object.png',
           tag: 'meat-price-alert-preview',
           data: { url: './' },
         });
