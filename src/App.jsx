@@ -132,7 +132,12 @@ function Sparkline({ product }) {
   const showPoint = (event, point) => {
     event.stopPropagation();
     const [, , value, index] = point;
-    setActivePoint({ value, date: dates[index], x: point[0], y: point[1] });
+    const svg = event.currentTarget.ownerSVGElement;
+    const wrap = event.currentTarget.closest('.spark-wrap').getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const pointerX = Number.isFinite(event.clientX) && event.clientX > 0 ? event.clientX : svgRect.left + (point[0] / 240) * svgRect.width;
+    const pointerY = Number.isFinite(event.clientY) && event.clientY > 0 ? event.clientY : svgRect.top + (point[1] / 78) * svgRect.height;
+    setActivePoint({ value, date: dates[index], anchorX: pointerX - wrap.left, anchorY: pointerY - wrap.top });
   };
 
   return (
@@ -164,7 +169,7 @@ function Sparkline({ product }) {
           return <span key={date}><b>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</b><i>{weekdayFor(date)}</i></span>;
         })}
       </div>
-      {activePoint && <div className="spark-tooltip" role="status"><strong>{number.format(activePoint.value)}원</strong><span>{formatDate(activePoint.date, { month: 'numeric', day: 'numeric' })} {weekdayFor(activePoint.date)}</span></div>}
+      {activePoint && <div className="spark-tooltip" role="status" style={{ left: activePoint.anchorX, top: activePoint.anchorY }}><strong>{number.format(activePoint.value)}원</strong><span>{formatDate(activePoint.date, { month: 'numeric', day: 'numeric' })} {weekdayFor(activePoint.date)}</span></div>}
     </div>
   );
 }
@@ -231,6 +236,15 @@ function PriceChart({ series, selectedProduct, onPoint }) {
   const yFor = (value) => pad.top + (1 - (value - yMin) / yRange) * innerHeight;
   const yTicks = Array.from({ length: 5 }, (_, index) => yMin + (yRange * index) / 4);
   const labelStep = Math.max(1, Math.ceil(series.keys.length / 6));
+  const reportPoint = (event, product, value, key, x, y, index) => {
+    event.stopPropagation();
+    const svg = event.currentTarget.ownerSVGElement;
+    const container = svg.closest('.hero-chart').getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const pointerX = Number.isFinite(event.clientX) && event.clientX > 0 ? event.clientX : svgRect.left + (x / width) * svgRect.width;
+    const pointerY = Number.isFinite(event.clientY) && event.clientY > 0 ? event.clientY : svgRect.top + (y / height) * svgRect.height;
+    onPoint({ product, value, key, index, anchorX: pointerX - container.left, anchorY: pointerY - container.top });
+  };
 
   useEffect(() => {
     const scrollNode = scrollRef.current;
@@ -281,7 +295,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
           if (segment.length) segments.push(segment);
           return <g key={product.productId} className={dimmed ? 'chart-line is-dimmed' : 'chart-line'}>
             {segments.map((points, index) => <path key={index} d={pathFor(points)} stroke={color} filter={selectedProduct === product.productId ? 'url(#glow)' : undefined} />)}
-            {points.filter(Boolean).map(([x, y, value, index]) => <circle key={index} className="chart-hit-point" cx={x} cy={y} r="8" fill="transparent" onPointerEnter={(event) => { event.stopPropagation(); onPoint({ product, value, key: series.keys[index], x, y }); }} onPointerDown={(event) => { event.stopPropagation(); onPoint({ product, value, key: series.keys[index], x, y }); }} onFocus={() => onPoint({ product, value, key: series.keys[index], x, y })} onBlur={() => onPoint(null)} tabIndex="0"><title>{`${shortName(product.name)} · ${formatChartLabel(series.keys[index], series.unit)} · ${number.format(value)}원`}</title></circle>)}
+            {points.filter(Boolean).map(([x, y, value, index]) => <circle key={index} className="chart-hit-point" cx={x} cy={y} r="8" fill="transparent" onPointerEnter={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onPointerDown={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onFocus={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onBlur={() => onPoint(null)} tabIndex="0"><title>{`${shortName(product.name)} · ${formatChartLabel(series.keys[index], series.unit)} · ${number.format(value)}원`}</title></circle>)}
           </g>;
         })}
       </svg>
@@ -580,7 +594,7 @@ export default function App() {
         </div>
         <PriceChart series={currentSeries} selectedProduct={selectedProduct} onPoint={setHoveredPoint} />
         <div className="chart-footnote"><span>가격 단위: 원 / 100g · 기록이 없는 날짜는 선으로 연결하지 않습니다.</span><span>{currentSeries.keys.length}개 기간 · 상품 클릭 시 강조</span></div>
-        {hoveredPoint && <div className="chart-tooltip"><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
+        {hoveredPoint && <div className="chart-tooltip" style={{ left: hoveredPoint.anchorX, top: hoveredPoint.anchorY }}><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
       </section>
 
       <section className="product-section">
