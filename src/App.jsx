@@ -38,6 +38,15 @@ function weekdayFor(date) {
   return WEEKDAYS[new Date(`${date}T12:00:00Z`).getUTCDay()];
 }
 
+function tooltipPlacement(anchorX, anchorY, width, height, variant = 'main') {
+  const halfWidth = variant === 'mini' ? 44 : 86;
+  const topThreshold = variant === 'mini' ? 34 : 70;
+  if (anchorX < halfWidth) return 'left';
+  if (anchorX > width - halfWidth) return 'right';
+  if (anchorY < topThreshold) return 'below';
+  return 'above';
+}
+
 function MeatIcon({ className = '' }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path d="M8.82 14c1.18 0 1.73-.48 2.43-.97.76-.53 1.89-.91 2.75-.51.38.17 1.54.51 2 .51 1 0 2.12-.89 1.99-2.29C17.74 8.09 15.15 6 12 6s-5.68 2.04-5.98 4.66c-.18 1.59.95 3.34 2.8 3.34m.68-5c.83 0 1.5.67 1.5 1.5S10.33 12 9.5 12 8 11.33 8 10.5 8.67 9 9.5 9" />
@@ -137,7 +146,9 @@ function Sparkline({ product }) {
     const svgRect = svg.getBoundingClientRect();
     const pointerX = Number.isFinite(event.clientX) && event.clientX > 0 ? event.clientX : svgRect.left + (point[0] / 240) * svgRect.width;
     const pointerY = Number.isFinite(event.clientY) && event.clientY > 0 ? event.clientY : svgRect.top + (point[1] / 78) * svgRect.height;
-    setActivePoint({ value, date: dates[index], anchorX: pointerX - wrap.left, anchorY: pointerY - wrap.top });
+    const anchorX = pointerX - wrap.left;
+    const anchorY = pointerY - wrap.top;
+    setActivePoint({ value, date: dates[index], anchorX, anchorY, placement: tooltipPlacement(anchorX, anchorY, wrap.width, wrap.height, 'mini') });
   };
 
   return (
@@ -169,7 +180,7 @@ function Sparkline({ product }) {
           return <span key={date}><b>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</b><i>{weekdayFor(date)}</i></span>;
         })}
       </div>
-      {activePoint && <div className="spark-tooltip" role="status" style={{ left: activePoint.anchorX, top: activePoint.anchorY }}><strong>{number.format(activePoint.value)}원</strong><span>{formatDate(activePoint.date, { month: 'numeric', day: 'numeric' })} {weekdayFor(activePoint.date)}</span></div>}
+      {activePoint && <div className={`spark-tooltip is-${activePoint.placement}`} role="status" style={{ left: activePoint.anchorX, top: activePoint.anchorY }}><strong>{number.format(activePoint.value)}원</strong><span>{formatDate(activePoint.date, { month: 'numeric', day: 'numeric' })} {weekdayFor(activePoint.date)}</span></div>}
     </div>
   );
 }
@@ -243,7 +254,21 @@ function PriceChart({ series, selectedProduct, onPoint }) {
     const svgRect = svg.getBoundingClientRect();
     const pointerX = Number.isFinite(event.clientX) && event.clientX > 0 ? event.clientX : svgRect.left + (x / width) * svgRect.width;
     const pointerY = Number.isFinite(event.clientY) && event.clientY > 0 ? event.clientY : svgRect.top + (y / height) * svgRect.height;
-    onPoint({ product, value, key, index, anchorX: pointerX - container.left, anchorY: pointerY - container.top });
+    const anchorX = pointerX - container.left;
+    const anchorY = pointerY - container.top;
+    onPoint({ product, value, key, index, anchorX, anchorY, placement: tooltipPlacement(anchorX, anchorY, container.width, container.height) });
+  };
+
+  const reportNearestPoint = (event, product, points) => {
+    const svg = event.currentTarget.ownerSVGElement;
+    const svgRect = svg.getBoundingClientRect();
+    const pointerX = Number.isFinite(event.clientX) && event.clientX > 0 ? ((event.clientX - svgRect.left) / svgRect.width) * width : points[0][0];
+    const pointerY = Number.isFinite(event.clientY) && event.clientY > 0 ? ((event.clientY - svgRect.top) / svgRect.height) * height : points[0][1];
+    const nearest = points.reduce((best, point) => {
+      const distance = Math.hypot(point[0] - pointerX, point[1] - pointerY);
+      return distance < best.distance ? { point, distance } : best;
+    }, { point: points[0], distance: Infinity }).point;
+    reportPoint(event, product, nearest[2], series.keys[nearest[3]], nearest[0], nearest[1], nearest[3]);
   };
 
   useEffect(() => {
@@ -294,7 +319,8 @@ function PriceChart({ series, selectedProduct, onPoint }) {
           points.forEach((point) => { if (point) segment.push(point); else if (segment.length) { segments.push(segment); segment = []; } });
           if (segment.length) segments.push(segment);
           return <g key={product.productId} className={dimmed ? 'chart-line is-dimmed' : 'chart-line'}>
-            {segments.map((points, index) => <path key={index} d={pathFor(points)} stroke={color} filter={selectedProduct === product.productId ? 'url(#glow)' : undefined} />)}
+            {segments.map((points, index) => <path key={`line-${index}`} d={pathFor(points)} stroke={color} filter={selectedProduct === product.productId ? 'url(#glow)' : undefined} />)}
+            {segments.map((points, index) => <path key={`hit-${index}`} className="chart-hit-line" d={pathFor(points)} onPointerEnter={(event) => reportNearestPoint(event, product, points)} onPointerMove={(event) => reportNearestPoint(event, product, points)} />)}
             {points.filter(Boolean).map(([x, y, value, index]) => <circle key={index} className="chart-hit-point" cx={x} cy={y} r="8" fill="transparent" onPointerEnter={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onPointerDown={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onFocus={(event) => reportPoint(event, product, value, series.keys[index], x, y, index)} onBlur={() => onPoint(null)} tabIndex="0"><title>{`${shortName(product.name)} · ${formatChartLabel(series.keys[index], series.unit)} · ${number.format(value)}원`}</title></circle>)}
           </g>;
         })}
@@ -594,7 +620,7 @@ export default function App() {
         </div>
         <PriceChart series={currentSeries} selectedProduct={selectedProduct} onPoint={setHoveredPoint} />
         <div className="chart-footnote"><span>가격 단위: 원 / 100g · 기록이 없는 날짜는 선으로 연결하지 않습니다.</span><span>{currentSeries.keys.length}개 기간 · 상품 클릭 시 강조</span></div>
-        {hoveredPoint && <div className="chart-tooltip" style={{ left: hoveredPoint.anchorX, top: hoveredPoint.anchorY }}><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
+        {hoveredPoint && <div className={`chart-tooltip is-${hoveredPoint.placement}`} style={{ left: hoveredPoint.anchorX, top: hoveredPoint.anchorY }}><strong>{shortName(hoveredPoint.product.name)}</strong><span>{formatChartLabel(hoveredPoint.key, unit)} · {number.format(hoveredPoint.value)}원</span></div>}
       </section>
 
       <section className="product-section">
