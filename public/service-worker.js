@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meat-price-watch-v3';
+const CACHE_NAME = 'meat-price-watch-v4';
 const APP_SHELL = ['./', './manifest.webmanifest', './favicon-object.png', './pwa-192.png', './pwa-512.png'];
 
 self.addEventListener('install', (event) => {
