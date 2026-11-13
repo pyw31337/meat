@@ -32,6 +32,11 @@ const BEEF_SERIES_COLORS = ['#c53f31', '#da6554', '#9b5545', '#e28a73'];
 const PORK_SERIES_COLORS = ['#1f6fae', '#3689c7', '#639fd0', '#4d759d', '#78add6', '#315d88'];
 const BEEF_CARD_ORDER = ['beef-grade-1pp', 'beef-grade-1p', 'beef-grade-1', 'beef-grade-1-1kg'];
 const ALERT_THRESHOLDS = { pork: 1700, beef: 7000 };
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function weekdayFor(date) {
+  return WEEKDAYS[new Date(`${date}T12:00:00Z`).getUTCDay()];
+}
 
 function MeatIcon({ className = '' }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -80,11 +85,12 @@ function seriesColor(product, products) {
 function lineSegments(values, width, height, pad, dates = []) {
   const numeric = values.filter(Number.isFinite);
   if (!numeric.length) return { segments: [], min: 0, max: 1 };
+  const inset = typeof pad === 'number' ? { top: pad, right: pad, bottom: pad, left: pad } : pad;
   const min = Math.min(...numeric);
   const max = Math.max(...numeric);
   const range = max - min || Math.max(100, Math.round(max * 0.04));
-  const xFor = (index) => pad + (index / Math.max(values.length - 1, 1)) * (width - pad * 2);
-  const yFor = (value) => height - pad - ((value - min) / range) * (height - pad * 2);
+  const xFor = (index) => inset.left + (index / Math.max(values.length - 1, 1)) * (width - inset.left - inset.right);
+  const yFor = (value) => height - inset.bottom - ((value - min) / range) * (height - inset.top - inset.bottom);
   const segments = [];
   let segment = [];
 
@@ -105,7 +111,7 @@ function lineSegments(values, width, height, pad, dates = []) {
     segment.push([xFor(index), yFor(value), value, index]);
   });
   if (segment.length) segments.push(segment);
-  return { segments, min, max };
+  return { segments, min, max, xFor, yFor };
 }
 
 function pathFor(points) {
@@ -113,40 +119,52 @@ function pathFor(points) {
 }
 
 function Sparkline({ product }) {
+  const [activePoint, setActivePoint] = useState(null);
   const records = recentRecords(product);
   const values = records.map((record) => record.price);
   const dates = records.map((record) => record.date);
-  const { segments } = lineSegments(values, 240, 68, 7, dates);
+  const geometry = lineSegments(values, 240, 78, { top: 8, right: 7, bottom: 20, left: 28 }, dates);
+  const { segments, min, max, xFor, yFor } = geometry;
   const color = product.category === 'pork' ? PORK_COLOR : BEEF_COLOR;
-  const latestIndex = values.findLastIndex(Number.isFinite);
-  const latestPoint = segments.flat().find((point) => point[3] === latestIndex);
   const singleRecord = records.length === 1;
+  const average = values.filter(Number.isFinite).reduce((sum, value) => sum + value, 0) / Math.max(values.filter(Number.isFinite).length, 1);
+  const points = segments.flat();
+  const showPoint = (event, point) => {
+    event.stopPropagation();
+    const [, , value, index] = point;
+    setActivePoint({ value, date: dates[index], x: point[0], y: point[1] });
+  };
 
   return (
     <div className="spark-wrap" aria-label={`${shortName(product.name)} 최근 ${records.length}회 수집 가격 그래프`}>
-      <svg className="sparkline" viewBox="0 0 240 68" role="img">
+      <svg className="sparkline" viewBox="0 0 240 78" role="img" onPointerLeave={() => setActivePoint(null)}>
         <defs>
           <linearGradient id={`fill-${product.productId.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor={color} stopOpacity="0.3" />
             <stop offset="1" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <line className="spark-baseline" x1="7" x2="233" y1="60" y2="60" />
+        <line className="spark-axis" x1="28" x2="28" y1="8" y2="58" />
+        <line className="spark-baseline" x1="28" x2="233" y1="58" y2="58" />
+        <line className="spark-average" x1="28" x2="233" y1={yFor(average)} y2={yFor(average)} />
+        <text className="spark-axis-label" x="24" y="12" textAnchor="end">{number.format(Math.round(max))}</text>
+        <text className="spark-axis-label" x="24" y="58" textAnchor="end">{number.format(Math.round(min))}</text>
         {dates.map((date, index) => {
-          const x = 7 + (index / Math.max(dates.length - 1, 1)) * 226;
-          return <line key={date} className="spark-guide" x1={x} x2={x} y1="57" y2="63" />;
+          const x = xFor(index);
+          return <line key={date} className="spark-guide" x1={x} x2={x} y1="55" y2="61" />;
         })}
-        {singleRecord ? <><line x1="7" x2="233" y1="34" y2="34" className="spark-single-line" stroke={color} /><circle cx="120" cy="34" r="4" fill={color} className="spark-dot" /></> : <>{segments.map((segment, index) => (
+        {singleRecord ? <><line x1="28" x2="233" y1={yFor(values[0])} y2={yFor(values[0])} className="spark-single-line" stroke={color} /><circle cx={xFor(0)} cy={yFor(values[0])} r="4" fill={color} className="spark-dot spark-point" onPointerDown={(event) => showPoint(event, [xFor(0), yFor(values[0]), values[0], 0])} onFocus={(event) => showPoint(event, [xFor(0), yFor(values[0]), values[0], 0])} tabIndex="0" /></> : <>{segments.map((segment, index) => (
           <path key={index} className="spark-path" d={pathFor(segment)} stroke={color} />
-        ))}{latestPoint && <circle cx={latestPoint[0]} cy={latestPoint[1]} r="3.8" fill={color} className="spark-dot" />}</>}
+        ))}{points.map((point) => <circle key={point[3]} cx={point[0]} cy={point[1]} r="5" fill={color} className="spark-dot spark-point" onPointerEnter={(event) => showPoint(event, point)} onPointerDown={(event) => showPoint(event, point)} onFocus={(event) => showPoint(event, point)} onBlur={() => setActivePoint(null)} tabIndex="0" />)}</>}
       </svg>
-      <div className={`spark-dates ${singleRecord ? 'is-single' : ''}`} aria-hidden="true">
-        {singleRecord ? <span>{`${Number(dates[0].slice(5, 7))}.${Number(dates[0].slice(8, 10))} 첫 기록`}</span> : dates.map((date, index) => {
+      <div className={`spark-dates ${singleRecord ? 'is-single' : ''}`} style={!singleRecord ? { gridTemplateColumns: `repeat(${Math.max(dates.length, 1)}, minmax(0, 1fr))` } : undefined}>
+        {singleRecord ? <span>{`${Number(dates[0].slice(5, 7))}.${Number(dates[0].slice(8, 10))} ${weekdayFor(dates[0])}`}</span> : dates.map((date, index) => {
           const previous = dates[index - 1];
           const newMonth = !previous || previous.slice(5, 7) !== date.slice(5, 7);
-          return <span key={date}>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</span>;
+          return <span key={date}><b>{newMonth ? `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}` : Number(date.slice(8, 10))}</b><i>{weekdayFor(date)}</i></span>;
         })}
       </div>
+      {activePoint && <div className="spark-tooltip" role="status"><strong>{number.format(activePoint.value)}원</strong><span>{formatDate(activePoint.date, { month: 'numeric', day: 'numeric' })} {weekdayFor(activePoint.date)}</span></div>}
     </div>
   );
 }
@@ -242,7 +260,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
       <p className="mobile-chart-hint" aria-hidden="true">최근 기간부터 표시 중 · 좌우로 밀어 전체 기간 보기</p>
       <div className="chart-scroll" ref={scrollRef} tabIndex="0" aria-label="가격 추이 그래프. 모바일에서는 좌우로 밀어 전체 기간을 볼 수 있습니다.">
       <div className="chart-canvas" ref={canvasRef}>
-      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이">
+      <svg className="main-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="선택한 기간의 상품별 100g당 가격 추이" onPointerLeave={() => onPoint(null)}>
         <defs>
           <filter id="glow" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
         </defs>
@@ -263,7 +281,7 @@ function PriceChart({ series, selectedProduct, onPoint }) {
           if (segment.length) segments.push(segment);
           return <g key={product.productId} className={dimmed ? 'chart-line is-dimmed' : 'chart-line'}>
             {segments.map((points, index) => <path key={index} d={pathFor(points)} stroke={color} filter={selectedProduct === product.productId ? 'url(#glow)' : undefined} />)}
-            {points.filter(Boolean).map(([x, y, value, index]) => <circle key={index} cx={x} cy={y} r={selectedProduct === product.productId ? 4 : 2.7} fill={color} onMouseEnter={() => onPoint({ product, value, key: series.keys[index], x, y })} onFocus={() => onPoint({ product, value, key: series.keys[index], x, y })} tabIndex="0"><title>{`${shortName(product.name)} · ${formatChartLabel(series.keys[index], series.unit)} · ${number.format(value)}원`}</title></circle>)}
+            {points.filter(Boolean).map(([x, y, value, index]) => <circle key={index} className="chart-hit-point" cx={x} cy={y} r="8" fill="transparent" onPointerEnter={(event) => { event.stopPropagation(); onPoint({ product, value, key: series.keys[index], x, y }); }} onPointerDown={(event) => { event.stopPropagation(); onPoint({ product, value, key: series.keys[index], x, y }); }} onFocus={() => onPoint({ product, value, key: series.keys[index], x, y })} onBlur={() => onPoint(null)} tabIndex="0"><title>{`${shortName(product.name)} · ${formatChartLabel(series.keys[index], series.unit)} · ${number.format(value)}원`}</title></circle>)}
           </g>;
         })}
       </svg>
@@ -366,7 +384,7 @@ function NotificationDialog({ products, onClose }) {
 
       if (matchingProducts.length) {
         const item = matchingProducts[0];
-        await registration.showNotification('메가마트 가격 조건 충족', {
+        await registration.showNotification('미트 트래커 가격 조건 충족', {
           body: `${shortName(item.name)} ${number.format(productStats(item).latest.price)}원 / 100g`,
           icon: './pwa-192.png',
           badge: './favicon-object.png',
@@ -482,7 +500,7 @@ export default function App() {
 
   const shareDashboard = async () => {
     const shareData = {
-      title: '메가마트 가격 관측소',
+      title: '미트 트래커',
       text: '한우 등심과 삼겹살의 100g당 가격 추이를 확인하세요.',
       url: window.location.href,
     };
@@ -510,9 +528,9 @@ export default function App() {
   return (
     <main className="page-shell">
       <header className="masthead">
-        <a className="brand" href="./" aria-label="메가마트 가격 관측소 첫 화면">
+        <a className="brand" href="./" aria-label="미트 트래커 첫 화면">
           <span className="brand-mark"><MeatIcon /></span>
-          <span><small>MEAT MARKET · PRICE WATCH</small><strong>가격 관측소</strong></span>
+          <span><small>MEAT TRACKER · PRICE WATCH</small><strong>미트 트래커</strong></span>
         </a>
         <div className="header-utilities">
           <div className="data-status"><span className="live-dot" />마지막 수집 <strong>{formatDate(dataEndDate, { year: 'numeric', month: 'long', day: 'numeric' })}</strong></div>
@@ -527,7 +545,7 @@ export default function App() {
 
       <section className="page-intro">
         <div>
-          <p className="eyebrow">MEGAMART · UNIT PRICE TRACKER</p>
+          <p className="eyebrow">MEAT TRACKER · UNIT PRICE</p>
           <h1>한우·삼겹살 가격 추이</h1>
           <p>메가마트 공개 판매가를 상품별로 분리해 100g 단가로 환산한 일별 기록입니다.</p>
         </div>
@@ -566,7 +584,7 @@ export default function App() {
       </section>
 
       <section className="product-section">
-        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div><p>미니 그래프는 <strong>최근 7회 실제 수집 값</strong>을 날짜와 함께 표시합니다. 날짜가 건너뛴 구간은 선으로 연결하지 않아 수집 공백을 숨기지 않습니다.</p></div>
+        <div className="section-heading"><div><p className="section-kicker">LATEST OBSERVATIONS</p><h2>상품별 가격 기록</h2></div></div>
         <div className="product-grid">
           {visibleProducts.map((product) => <ProductCard key={product.productId} product={product} dataEndDate={dataEndDate} isActive={selectedProduct === product.productId} onSelect={() => setSelectedProduct((active) => active === product.productId ? null : product.productId)} />)}
         </div>

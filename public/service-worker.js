@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let payload = {};
   try { payload = event.data?.json() ?? {}; } catch { payload = { body: event.data?.text() }; }
-  event.waitUntil(self.registration.showNotification(payload.title || '메가마트 가격 관측소', {
+  event.waitUntil(self.registration.showNotification(payload.title || '미트 트래커', {
     body: payload.body || '조건에 맞는 가격을 확인하세요.',
     icon: './pwa-192.png',
     badge: './favicon-object.png',

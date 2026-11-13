@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "메가마트 가격 관측소",
-  "short_name": "가격 관측소",
-  "description": "한우 등심과 삼겹살의 100g당 가격 추이를 확인하는 가격 관측소",
+  "name": "미트 트래커",
+  "short_name": "Meat Tracker",
+  "description": "한우 등심과 삼겹살의 100g당 가격 추이를 확인하는 미트 트래커",
   "lang": "ko-KR",
   "start_url": "./",
   "scope": "./",
