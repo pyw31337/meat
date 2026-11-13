@@ -1,4 +1,4 @@
-# 메가마트 가격 관측소
+# 미트 트래커
 
 한우 등심과 국내산 삼겹살의 판매가를 수집해 **100g당 가격**으로 비교하는 GitHub Pages 대시보드입니다.
 
@@ -40,6 +40,8 @@ python3 megamart_checker.py
 ```
 
 수집기는 `history/prices.csv`를 갱신합니다. 각 행에 메가마트 상품 ID를 함께 저장합니다. `NTFY_TOPIC` 또는 `RECEIVER_EMAIL`을 GitHub Actions secret으로 설정하면 기준 가격 이하 상품을 하루 한 번 통보할 수 있습니다. 브라우저 알림 권한만 요청하는 기능은 의도적으로 제거했습니다.
+
+PWA 알림을 모든 설치 기기로 보내려면 [Web Push 서버 설정 문서](docs/web-push-setup.md)를 따라 `push-server/`를 HTTPS로 실행하고, Pages Secrets에 `VITE_PUSH_SUBSCRIBE_URL`과 `VITE_PUSH_VAPID_PUBLIC_KEY`를 추가합니다.
 
 기존 이력만 별도로 정규화하려면 다음을 실행합니다.
 

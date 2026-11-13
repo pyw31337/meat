@@ -31,6 +31,9 @@ jobs:
           cache: npm
 
       - name: Build dashboard
+        env:
+          VITE_PUSH_SUBSCRIBE_URL: ${{ secrets.VITE_PUSH_SUBSCRIBE_URL }}
+          VITE_PUSH_VAPID_PUBLIC_KEY: ${{ secrets.VITE_PUSH_VAPID_PUBLIC_KEY }}
         run: |
           npm ci
           npm run test
