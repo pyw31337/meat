@@ -35,9 +35,12 @@ npm run build
 ## 가격 수집
 
 ```bash
-python3 -m pip install -r requirements.txt
-python3 megamart_checker.py
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python megamart_checker.py
 ```
+
+macOS의 Homebrew Python은 시스템 패키지 설치가 차단될 수 있으므로, 로컬 수집은 프로젝트별 `.venv`를 사용합니다. `.venv`는 Git에 포함되지 않으며 새 Mac에서는 위 두 줄만 다시 실행하면 됩니다.
 
 수집기는 `history/prices.csv`를 갱신합니다. 각 행에 메가마트 상품 ID를 함께 저장합니다. `NTFY_TOPIC` 또는 `RECEIVER_EMAIL`을 GitHub Actions secret으로 설정하면 기준 가격 이하 상품을 하루 한 번 통보할 수 있습니다. 브라우저 알림 권한만 요청하는 기능은 의도적으로 제거했습니다.
 
