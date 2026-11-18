@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # GitHub-token pushes made by the scheduled price collector do not start a
+  # second workflow. Deploy after a successful collector run as well.
+  workflow_run:
+    workflows: ["Megamart Price Monitor"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -16,6 +21,8 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -46,6 +46,25 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add history/prices.csv history/last_alert_sent.txt
+        git add history/prices.csv history/last_alert_sent.txt history/notification_status.json
         git diff --staged --quiet || git commit -m "data: update daily price history"
         git push origin main
+
+    - name: Surface notification health
+      if: always()
+      run: |
+        if [ -f history/notification_status.json ]; then
+          status=$(python - <<'PY'
+import json
+from pathlib import Path
+print(json.loads(Path('history/notification_status.json').read_text())['status'])
+PY
+          )
+          if [ "$status" = "failed" ]; then
+            echo "::error title=Price alert delivery failed::The collector found eligible prices, but every configured notification channel failed. Check RECEIVER_EMAIL/NTFY_TOPIC/WEB_PUSH_DISPATCH_URL secrets."
+          else
+            echo "Notification health: $status"
+          fi
+        else
+          echo "::warning title=Notification status missing::The collector did not write history/notification_status.json"
+        fi

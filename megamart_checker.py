@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parent
 HISTORY_DIR = ROOT / "history"
 HISTORY_PATH = HISTORY_DIR / "prices.csv"
 ALERT_STATE_PATH = HISTORY_DIR / "last_alert_sent.txt"
+NOTIFICATION_STATUS_PATH = HISTORY_DIR / "notification_status.json"
 KST = timezone(timedelta(hours=9))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -223,6 +224,25 @@ def load_alert_state() -> str:
         return ""
 
 
+def write_notification_status(*, status: str, eligible_count: int, delivered: bool, configured_channels: list[str]) -> None:
+    """Persist non-secret notification health for the dashboard/workflow.
+
+    This file deliberately contains channel names and counts only; no recipient,
+    topic, endpoint, token, or message body is written to the repository.
+    """
+    HISTORY_DIR.mkdir(exist_ok=True)
+    payload = {
+        "checked_at": datetime.now(KST).isoformat(),
+        "status": status,
+        "eligible_count": eligible_count,
+        "delivered": delivered,
+        "configured_channels": configured_channels,
+    }
+    NOTIFICATION_STATUS_PATH.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def send_ntfy(title: str, message: str) -> bool:
     topic = os.getenv("NTFY_TOPIC", "").strip()
     if not topic:
@@ -295,7 +315,24 @@ def notify_if_needed(observations: list[Observation]) -> None:
         item for item in observations
         if item.price_per_100g <= (PORK_PRICE_THRESHOLD if item.category == "pork" else BEEF_PRICE_THRESHOLD)
     ]
-    if not cheap or load_alert_state() == today_kst():
+    configured_channels = [
+        channel for channel, value in (
+            ("web_push", os.getenv("WEB_PUSH_DISPATCH_URL", "").strip()),
+            ("ntfy", os.getenv("NTFY_TOPIC", "").strip()),
+            ("email", os.getenv("RECEIVER_EMAIL", "").strip()),
+        ) if value
+    ]
+    if not cheap:
+        write_notification_status(
+            status="not_eligible", eligible_count=0, delivered=False,
+            configured_channels=configured_channels,
+        )
+        return
+    if load_alert_state() == today_kst():
+        write_notification_status(
+            status="already_sent", eligible_count=len(cheap), delivered=True,
+            configured_channels=configured_channels,
+        )
         return
 
     lines = ["가격 조건을 만족한 상품입니다.", ""]
@@ -306,8 +343,16 @@ def notify_if_needed(observations: list[Observation]) -> None:
     delivered = any((send_web_push(title, message), send_ntfy(title, message), send_email(title, message)))
     if delivered:
         ALERT_STATE_PATH.write_text(today_kst(), encoding="utf-8")
+        write_notification_status(
+            status="delivered", eligible_count=len(cheap), delivered=True,
+            configured_channels=configured_channels,
+        )
         logging.info("Price alert delivered")
     else:
+        write_notification_status(
+            status="failed", eligible_count=len(cheap), delivered=False,
+            configured_channels=configured_channels,
+        )
         logging.info("Price alert was not configured or could not be delivered")
 
 
