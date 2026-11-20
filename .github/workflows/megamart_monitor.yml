@@ -54,12 +54,7 @@ jobs:
       if: always()
       run: |
         if [ -f history/notification_status.json ]; then
-          status=$(python - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('history/notification_status.json').read_text())['status'])
-PY
-          )
+          status=$(python -c 'import json; from pathlib import Path; print(json.loads(Path("history/notification_status.json").read_text())["status"])')
           if [ "$status" = "failed" ]; then
             echo "::error title=Price alert delivery failed::The collector found eligible prices, but every configured notification channel failed. Check RECEIVER_EMAIL/NTFY_TOPIC/WEB_PUSH_DISPATCH_URL secrets."
           else
