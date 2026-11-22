@@ -14,6 +14,10 @@ on:
     - cron: '0 11 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: megamart-price-monitor
+  cancel-in-progress: false
+
 jobs:
   monitor:
     runs-on: ubuntu-latest

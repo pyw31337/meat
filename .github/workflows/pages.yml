@@ -56,6 +56,12 @@ jobs:
         with:
           path: 'dist'
 
+      # The Pages artifact is eventually consistent in the Actions API. A
+      # workflow_run deployment can otherwise race artifact registration and
+      # deploy-pages may report that github-pages was not found.
+      - name: Allow artifact registration
+        run: sleep 12
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
