@@ -63,3 +63,13 @@ jobs:
         else
           echo "::warning title=Notification status missing::The collector did not write history/notification_status.json"
         fi
+
+    - name: Publish observability ledger
+      if: always()
+      run: python scripts/record_observability.py
+
+    - name: Commit observability ledger
+      if: always()
+      run: |
+        git add data/observability/latest.json
+        git diff --staged --quiet || (git commit -m "chore(ops): publish meat observability ledger [skip ci]" && git push origin main)
