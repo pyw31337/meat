@@ -251,7 +251,10 @@ def send_ntfy(title: str, message: str) -> bool:
         req = request.Request(
             f"https://ntfy.sh/{topic}",
             data=message.encode("utf-8"),
-            headers={"Title": title, "Priority": "high", "Tags": "meat,chart", "Click": "https://pyw31337.github.io/meat/"},
+            # urllib requires HTTP header values to be latin-1 encodable;
+            # keep the localized message in the UTF-8 body and use an ASCII
+            # title for reliable delivery across ntfy clients.
+            headers={"Title": "Meat Tracker price alert", "Priority": "high", "Tags": "meat,chart", "Click": "https://pyw31337.github.io/meat/"},
             method="POST",
         )
         with request.urlopen(req, timeout=15) as response:
