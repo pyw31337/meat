@@ -1,6 +1,6 @@
 {
-  "checked_at": "2026-11-23T09:00:19.738907+09:00",
-  "status": "delivered",
+  "checked_at": "2026-11-23T11:25:37.884986+09:00",
+  "status": "already_sent",
   "eligible_count": 3,
   "delivered": true,
   "configured_channels": [
