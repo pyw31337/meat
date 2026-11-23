@@ -343,7 +343,13 @@ def notify_if_needed(observations: list[Observation]) -> None:
     lines.extend(["", "대시보드: https://pyw31337.github.io/meat/"])
     message = "\n".join(lines)
     title = "[메가마트] 조건 충족 가격 발견"
-    delivered = any((send_web_push(title, message), send_ntfy(title, message), send_email(title, message)))
+    # Short-circuit after the first successful channel. This avoids noisy
+    # failures from optional fallback channels once an alert is delivered.
+    delivered = (
+        send_web_push(title, message)
+        or send_ntfy(title, message)
+        or send_email(title, message)
+    )
     if delivered:
         ALERT_STATE_PATH.write_text(today_kst(), encoding="utf-8")
         write_notification_status(
