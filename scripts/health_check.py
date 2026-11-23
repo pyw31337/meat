@@ -72,6 +72,9 @@ def main() -> int:
         "checks": checks,
         "failures": failures,
     }
+    (ROOT / "health_result.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:

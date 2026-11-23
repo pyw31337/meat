@@ -11,5 +11,6 @@ __pycache__/
 # Local collector artefacts
 .env
 *.log
+health_result.json
 screenshots/
 screenshots_test/

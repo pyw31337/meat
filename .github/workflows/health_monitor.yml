@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   health:
@@ -34,3 +35,47 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python scripts/health_check.py
+
+      - name: Upload health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meat-tracker-health-${{ github.run_id }}
+          path: health_result.json
+          retention-days: 14
+
+      - name: Attempt safe automatic remediation
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ ! -f health_result.json ]; then
+            echo "Health report is missing; no automatic action taken."
+            exit 0
+          fi
+
+          recent_monitor=$(gh run list --repo "$GH_REPO" --workflow megamart_monitor.yml --limit 1 --json status,createdAt)
+          monitor_running=$(printf '%s' "$recent_monitor" | jq -r '.[0].status // ""')
+          monitor_created=$(printf '%s' "$recent_monitor" | jq -r '.[0].createdAt // ""')
+          now=$(date +%s)
+          monitor_age=999999
+          if [ -n "$monitor_created" ]; then
+            monitor_epoch=$(date -j -f '%Y-%m-%dT%H:%M:%SZ' "$monitor_created" +%s 2>/dev/null || date -d "$monitor_created" +%s)
+            monitor_age=$((now - monitor_epoch))
+          fi
+
+          if jq -e '.failures[]? | contains("local history")' health_result.json >/dev/null; then
+            if [ "$monitor_running" != "in_progress" ] && [ "$monitor_age" -ge 21600 ]; then
+              echo "Local history is stale; dispatching one collector recovery run."
+              gh workflow run megamart_monitor.yml --repo "$GH_REPO" --ref main
+            else
+              echo "Collector recovery suppressed because a recent/run is already present."
+            fi
+          fi
+
+          if jq -e '.failures[]? | contains("Pages")' health_result.json >/dev/null; then
+            echo "Pages is stale; dispatching a publication recovery run."
+            gh workflow run pages.yml --repo "$GH_REPO" --ref main
+          fi
