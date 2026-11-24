@@ -1,8 +1,8 @@
 {
-  "checked_at": "2026-11-24T22:00:55.648407+09:00",
-  "status": "already_sent",
-  "eligible_count": 3,
-  "delivered": true,
+  "checked_at": "2026-11-25T03:42:05.492717+09:00",
+  "status": "not_eligible",
+  "eligible_count": 0,
+  "delivered": false,
   "configured_channels": [
     "ntfy",
     "email"
