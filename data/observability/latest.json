@@ -1,7 +1,7 @@
 {
   "schema": "lets_observability_v1",
-  "run_id": "meat-20261125T202149Z",
-  "observed_at": "2026-11-25T20:21:49.195342+00:00",
+  "run_id": "meat-20261126T040236Z",
+  "observed_at": "2026-11-26T04:02:36.265705+00:00",
   "service_id": "meat",
   "source": "persisted_price_history",
   "stages": {
