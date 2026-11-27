@@ -1,13 +1,13 @@
 {
   "schema": "lets_observability_v1",
-  "run_id": "meat-20261127T113148Z",
-  "observed_at": "2026-11-27T11:31:48.735113+00:00",
+  "run_id": "meat-20261127T171704Z",
+  "observed_at": "2026-11-27T17:17:04.760832+00:00",
   "service_id": "meat",
   "source": "persisted_price_history",
   "stages": {
     "collect": {
       "status": "success",
-      "ok": 681,
+      "ok": 691,
       "artifact": true
     },
     "analyze": {
@@ -24,13 +24,13 @@
     }
   },
   "counts": {
-    "records": 681,
-    "unique_records": 681,
+    "records": 691,
+    "unique_records": 691,
     "increment": 10,
-    "increment_date": "2026-11-27"
+    "increment_date": "2026-11-28"
   },
   "artifacts": {
-    "history": "a8491674b3e0c6947586fb42a0f42bc8a703a5febbb09674802a2f0c7c11dd61"
+    "history": "f6e443a6c407d0267799e9dbb1baecee4242d4c2835dbeb5563694896ebb8b04"
   },
   "note": "Persisted price history rows; increment is the latest persisted date."
 }
